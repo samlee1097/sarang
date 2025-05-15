@@ -30,19 +30,19 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		229C330D2DD597BF008387FD /* sarang */ = {
+		229C330D2DD597BF008387FD /* App */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			path = sarang;
+			path = App;
 			sourceTree = "<group>";
 		};
-		229C331B2DD597C0008387FD /* sarangTests */ = {
+		229C331B2DD597C0008387FD /* Tests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			path = sarangTests;
+			path = Tests;
 			sourceTree = "<group>";
 		};
-		229C33252DD597C0008387FD /* sarangUITests */ = {
+		229C33252DD597C0008387FD /* UITests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			path = sarangUITests;
+			path = UITests;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -75,9 +75,9 @@
 		229C33022DD597BF008387FD = {
 			isa = PBXGroup;
 			children = (
-				229C330D2DD597BF008387FD /* sarang */,
-				229C331B2DD597C0008387FD /* sarangTests */,
-				229C33252DD597C0008387FD /* sarangUITests */,
+				229C330D2DD597BF008387FD /* App */,
+				229C331B2DD597C0008387FD /* Tests */,
+				229C33252DD597C0008387FD /* UITests */,
 				229C330C2DD597BF008387FD /* Products */,
 			);
 			sourceTree = "<group>";
@@ -108,7 +108,7 @@
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				229C330D2DD597BF008387FD /* sarang */,
+				229C330D2DD597BF008387FD /* App */,
 			);
 			name = sarang;
 			packageProductDependencies = (
@@ -131,7 +131,7 @@
 				229C331A2DD597C0008387FD /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
-				229C331B2DD597C0008387FD /* sarangTests */,
+				229C331B2DD597C0008387FD /* Tests */,
 			);
 			name = sarangTests;
 			packageProductDependencies = (
@@ -154,7 +154,7 @@
 				229C33242DD597C0008387FD /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
-				229C33252DD597C0008387FD /* sarangUITests */,
+				229C33252DD597C0008387FD /* UITests */,
 			);
 			name = sarangUITests;
 			packageProductDependencies = (
