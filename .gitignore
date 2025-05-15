@@ -101,4 +101,10 @@ iOSInjectionProject/
 # End of https://www.toptal.com/developers/gitignore/api/swift,xcode
 *.xcuserstate
 sarang.xcworkspace/
+
+# OS-specific files
+.DS_Store
+.Trashes
+Thumbs.db
+
 xcuserdata/
