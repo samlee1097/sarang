@@ -16,7 +16,7 @@
 
 ## Description
 
-Mobile IOS App to track and generate personalized date ideas for couples.
+Mobile IOS App to track and generate personalized date nights for couples. 
 
 <a name="technologies"/>
 
@@ -30,11 +30,10 @@ Mobile IOS App to track and generate personalized date ideas for couples.
 
 ## Setup
 
-Start by **forking** the project template repository and then clone the project:
+Start by **forking** the project template repository and then cloning the project:
 
 ```console
 $ git clone git@github.com:samlee1097/sarang.git
-$ cd sarang
 ```
 
 ## Design
@@ -44,13 +43,18 @@ $ cd sarang
 ### Data Structure
 
 
-### Component Hierarcy
+### Component Hierarchy
 
 
 ### User Stories
 
 **MVP:**
-User will be able to:
-
+The user will be able to:
+- Create a user
+- Subscribe to another user's calendar
+- Create events on a calendar
+- Fill out a form to personalize interests
+- Request the frequency of date recommendations
+- Accept date recommendations
 
 **Stretch goals:**
