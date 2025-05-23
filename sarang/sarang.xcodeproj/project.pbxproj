@@ -6,6 +6,13 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		2262AAA02DE0F1DC00FCA52D /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 2262AA9F2DE0F1DC00FCA52D /* GoogleService-Info.plist */; };
+		2262AAB22DE0F83200FCA52D /* FirebaseAnalyticsWithoutAdIdSupport in Frameworks */ = {isa = PBXBuildFile; productRef = 2262AAB12DE0F83200FCA52D /* FirebaseAnalyticsWithoutAdIdSupport */; };
+		2262AAB42DE0F83200FCA52D /* FirebaseAppCheck in Frameworks */ = {isa = PBXBuildFile; productRef = 2262AAB32DE0F83200FCA52D /* FirebaseAppCheck */; };
+		2262AAB72DE0F87400FCA52D /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = 2262AAB62DE0F87400FCA52D /* FirebaseFirestore */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		229C33192DD597C0008387FD /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -24,6 +31,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		2262AA9F2DE0F1DC00FCA52D /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		229C330B2DD597BF008387FD /* sarang.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = sarang.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		229C33182DD597C0008387FD /* sarangTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = sarangTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		229C33222DD597C0008387FD /* sarangUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = sarangUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -52,6 +60,9 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				2262AAB42DE0F83200FCA52D /* FirebaseAppCheck in Frameworks */,
+				2262AAB22DE0F83200FCA52D /* FirebaseAnalyticsWithoutAdIdSupport in Frameworks */,
+				2262AAB72DE0F87400FCA52D /* FirebaseFirestore in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -72,6 +83,13 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		2262AAB52DE0F87400FCA52D /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		229C33022DD597BF008387FD = {
 			isa = PBXGroup;
 			children = (
@@ -79,6 +97,8 @@
 				229C331B2DD597C0008387FD /* Tests */,
 				229C33252DD597C0008387FD /* UITests */,
 				229C330C2DD597BF008387FD /* Products */,
+				2262AA9F2DE0F1DC00FCA52D /* GoogleService-Info.plist */,
+				2262AAB52DE0F87400FCA52D /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -112,6 +132,9 @@
 			);
 			name = sarang;
 			packageProductDependencies = (
+				2262AAB12DE0F83200FCA52D /* FirebaseAnalyticsWithoutAdIdSupport */,
+				2262AAB32DE0F83200FCA52D /* FirebaseAppCheck */,
+				2262AAB62DE0F87400FCA52D /* FirebaseFirestore */,
 			);
 			productName = sarang;
 			productReference = 229C330B2DD597BF008387FD /* sarang.app */;
@@ -195,6 +218,9 @@
 			);
 			mainGroup = 229C33022DD597BF008387FD;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				2262AAB02DE0F83200FCA52D /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 229C330C2DD597BF008387FD /* Products */;
 			projectDirPath = "";
@@ -212,6 +238,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				2262AAA02DE0F1DC00FCA52D /* GoogleService-Info.plist in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -550,6 +577,35 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		2262AAB02DE0F83200FCA52D /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/firebase/firebase-ios-sdk";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 11.13.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		2262AAB12DE0F83200FCA52D /* FirebaseAnalyticsWithoutAdIdSupport */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 2262AAB02DE0F83200FCA52D /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAnalyticsWithoutAdIdSupport;
+		};
+		2262AAB32DE0F83200FCA52D /* FirebaseAppCheck */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 2262AAB02DE0F83200FCA52D /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAppCheck;
+		};
+		2262AAB62DE0F87400FCA52D /* FirebaseFirestore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 2262AAB02DE0F83200FCA52D /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseFirestore;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 229C33032DD597BF008387FD /* Project object */;
 }

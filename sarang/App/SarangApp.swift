@@ -6,14 +6,19 @@
 //
 
 import SwiftUI
-import SwiftData
+import FirebaseCore
 
 @main
 struct SarangApp: App {
+    init() {
+        FirebaseApp.configure()
+    }
+    
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            NavigationView {
+                ContentView()
+            }
         }
-        .modelContainer(for:DataItem.self)
     }
 }
