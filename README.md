@@ -41,7 +41,8 @@ $ git clone git@github.com:samlee1097/sarang.git
 <a name="design"/>
 
 ### Data Structure
-![diagram-export-5-18-2025-9_48_24-PM](https://github.com/user-attachments/assets/c645f995-2baf-4fea-a7f6-e1af5da40762)
+<img width="1101" alt="image" src="https://github.com/user-attachments/assets/3fb6496c-7355-4279-85f6-c58ac3b53d3d" />
+
 
 
 ### Component Hierarchy
