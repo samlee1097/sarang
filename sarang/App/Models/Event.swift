@@ -12,5 +12,5 @@ struct Event: Codable, Identifiable {
     @FirestoreDate var start_time: Date
     @FirestoreDate var end_time: Date
     @FirestoreDate var created_at: Date
-    @FirestoreDateOptional var updated_at: Date?
+    @FirestoreDate var updated_at: Date
 }

@@ -7,5 +7,5 @@ struct PreferenceInterest: Codable, Identifiable {
     var interest_id: String
     var weight: Float
     @FirestoreDate var created_at: Date
-    @FirestoreDateOptional var updated_at: Date?
+    @FirestoreDate var updated_at: Date
 }

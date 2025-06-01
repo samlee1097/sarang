@@ -9,5 +9,5 @@ struct Recommendation: Codable, Identifiable {
     var status: String
     var suggestion_text: String?
     @FirestoreDate var created_at: Date
-    @FirestoreDateOptional var updated_at: Date?
+    @FirestoreDate var updated_at: Date
 }

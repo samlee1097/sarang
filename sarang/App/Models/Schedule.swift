@@ -7,5 +7,5 @@ struct Schedule: Codable, Identifiable {
     var title: String
     var is_shared: Bool
     @FirestoreDate var created_at: Date
-    @FirestoreDateOptional var updated_at: Date?
+    @FirestoreDate var updated_at: Date
 }

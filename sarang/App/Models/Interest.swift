@@ -6,5 +6,5 @@ struct Interest: Codable, Identifiable {
     var name: String
     var category: String
     @FirestoreDate var created_at: Date
-    @FirestoreDateOptional var updated_at: Date?
+    @FirestoreDate var updated_at: Date
 }

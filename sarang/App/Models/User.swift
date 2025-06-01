@@ -9,5 +9,5 @@ struct User: Codable, Identifiable {
     var profile_image_url: String
     var onboarding_completed: Bool
     @FirestoreDate var created_at: Date
-    @FirestoreDateOptional var updated_at: Date?
+    @FirestoreDate var updated_at: Date
 }

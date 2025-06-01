@@ -11,7 +11,7 @@ class UserService {
         newUser.updated_at = now
         
         do {
-            let userData = try Firestore.Encoder().encode(newUser)
+            let userData = try encodeToDictionary(newUser)
             db.collection("users").addDocument(data: userData) { error in
                 if let error = error {
                     print("Error adding user: \(error.localizedDescription)")
@@ -44,15 +44,54 @@ class UserService {
             }
             
             do {
-                let jsonData = try JSONSerialization.data(withJSONObject: data)
-                var user = try JSONDecoder().decode(User.self, from: jsonData)
-                user.id = document.documentID
+                let user = try self.decodeFromDictionary(User.self, dict: document.data()!)
                 completion(user)
             } catch {
                 print("Error decoding user: \(error.localizedDescription)")
                 completion(nil)
             }
         }
+    }
+
+    func updateUser(user: User, completion: @escaping (Bool) -> Void) {
+        guard let userId = user.id else {
+            completion(false)
+            return
+        }
+        
+        var updatedUser = user
+        updatedUser.updated_at = Date()
+
+        do {
+            let userData = try encodeToDictionary(updatedUser)
+            db.collection("users").document(userId).setData(userData, merge: true) { error in
+                if let error = error {
+                    print("Error updating user: \(error.localizedDescription)")
+                    completion(false)
+                } else {
+                    print("User updated successfully.")
+                    completion(true)
+                }
+            }
+        } catch {
+            print("Error encoding user: \(error.localizedDescription)")
+            completion(false)
+        }
+    }
+
+    
+    private func encodeToDictionary<T: Codable>(_ value: T) throws -> [String: Any] {
+        let jsonData = try JSONEncoder().encode(value)
+        guard let dict = try JSONSerialization.jsonObject(with: jsonData) as? [String: Any] else {
+            throw NSError(domain: "EncodingError", code: -1, userInfo: nil)
+        }
+        return dict
+    }
+    
+    private func decodeFromDictionary<T: Codable>(_ type: T.Type, dict: [String: Any]) throws -> T {
+        let jsonData = try JSONSerialization.data(withJSONObject: dict)
+        let object = try JSONDecoder().decode(type, from: jsonData)
+        return object
     }
 
 }
