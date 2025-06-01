@@ -110,3 +110,7 @@ Thumbs.db
 xcuserdata/
 
 sarang/sarang.xcodeproj/project.xcworkspace/xcuserdata/sam.xcuserdatad/UserInterfaceState.xcuserstate
+
+# Firebase config file
+GoogleService-Info.plist
+
