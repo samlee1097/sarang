@@ -5,8 +5,13 @@ class UserService {
     private let db = Firestore.firestore()
     
     func addUser(user: User, completion: @escaping (Bool) -> Void) {
+        var newUser = user
+        let now = Date()
+        newUser.created_at = now
+        newUser.updated_at = now
+        
         do {
-            let userData = try Firestore.Encoder().encode(user)
+            let userData = try Firestore.Encoder().encode(newUser)
             db.collection("users").addDocument(data: userData) { error in
                 if let error = error {
                     print("Error adding user: \(error.localizedDescription)")
