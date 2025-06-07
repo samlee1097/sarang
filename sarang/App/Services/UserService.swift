@@ -5,14 +5,23 @@ class UserService {
     private let db = Firestore.firestore()
     
     func addUser(user: User, completion: @escaping (Bool) -> Void) {
+        guard let userId = user.id else {
+            print("User id is missing, cannot add user")
+            completion(false)
+            return
+        }
+        
         var newUser = user
         let now = Date()
-        newUser.created_at = now
-        newUser.updated_at = now
         
+        if newUser.created_at.timeIntervalSince1970 == 0 {
+            newUser.created_at = now
+        }
+        newUser.updated_at = now
+
         do {
             let userData = try encodeToDictionary(newUser)
-            db.collection("users").addDocument(data: userData) { error in
+            db.collection("users").document(userId).setData(userData) { error in
                 if let error = error {
                     print("Error adding user: \(error.localizedDescription)")
                     completion(false)
@@ -26,7 +35,6 @@ class UserService {
             completion(false)
         }
     }
-
     
     func getUser(userId: String, completion: @escaping (User?) -> Void) {
         db.collection("users").document(userId).getDocument { document, error in
@@ -36,15 +44,14 @@ class UserService {
                 return
             }
             
-            guard let document = document, document.exists,
-                  let data = document.data() else {
+            guard let document = document, document.exists, let data = document.data() else {
                 print("User document does not exist.")
                 completion(nil)
                 return
             }
             
             do {
-                let user = try self.decodeFromDictionary(User.self, dict: document.data()!)
+                let user = try self.decodeFromDictionary(User.self, dict: data)
                 completion(user)
             } catch {
                 print("Error decoding user: \(error.localizedDescription)")
@@ -55,6 +62,7 @@ class UserService {
 
     func updateUser(user: User, completion: @escaping (Bool) -> Void) {
         guard let userId = user.id else {
+            print("User id is missing, cannot update user")
             completion(false)
             return
         }
@@ -79,7 +87,7 @@ class UserService {
         }
     }
 
-    
+    // Helpers to convert Codable to Dictionary and back
     private func encodeToDictionary<T: Codable>(_ value: T) throws -> [String: Any] {
         let jsonData = try JSONEncoder().encode(value)
         guard let dict = try JSONSerialization.jsonObject(with: jsonData) as? [String: Any] else {
@@ -93,5 +101,4 @@ class UserService {
         let object = try JSONDecoder().decode(type, from: jsonData)
         return object
     }
-
 }

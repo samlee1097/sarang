@@ -1,97 +1,74 @@
 import Foundation
-import FirebaseFirestore
+import FirebaseAuth
 
-class UserService {
-    private let db = Firestore.firestore()
+class AuthService {
+    static let shared = AuthService()
     
-    func addUser(user: User, completion: @escaping (Bool) -> Void) {
-        var newUser = user
-        let now = Date()
-        newUser.created_at = now
-        newUser.updated_at = now
-        
-        do {
-            let userData = try encodeToDictionary(newUser)
-            db.collection("users").addDocument(data: userData) { error in
-                if let error = error {
-                    print("Error adding user: \(error.localizedDescription)")
-                    completion(false)
-                } else {
-                    print("User added successfully.")
-                    completion(true)
-                }
-            }
-        } catch {
-            print("Error encoding user: \(error.localizedDescription)")
-            completion(false)
-        }
-    }
-
+    private init() {}
     
-    func getUser(userId: String, completion: @escaping (User?) -> Void) {
-        db.collection("users").document(userId).getDocument { document, error in
+    func signUp(email: String, password: String, username: String, displayName: String, completion: @escaping (Bool) -> Void) {
+        Auth.auth().createUser(withEmail: email, password: password) { authResult, error in
             if let error = error {
-                print("Error getting user: \(error.localizedDescription)")
-                completion(nil)
+                print("Signup failed: \(error.localizedDescription)")
+                completion(false)
                 return
             }
             
-            guard let document = document, document.exists,
-                  let data = document.data() else {
-                print("User document does not exist.")
-                completion(nil)
+            guard let authUser = authResult?.user else {
+                print("Signup failed: Auth user missing")
+                completion(false)
                 return
             }
             
-            do {
-                let user = try self.decodeFromDictionary(User.self, dict: document.data()!)
-                completion(user)
-            } catch {
-                print("Error decoding user: \(error.localizedDescription)")
-                completion(nil)
+            let appUser = UserHelper.createAppUser(from: authUser, username: username, displayName: displayName)
+            
+            UserService().addUser(user: appUser) { success in
+                completion(success)
             }
         }
     }
-
-    func updateUser(user: User, completion: @escaping (Bool) -> Void) {
-        guard let userId = user.id else {
-            completion(false)
-            return
+    
+    func login(email: String, password: String, completion: @escaping(Bool) -> Void) {
+        Auth.auth().signIn(withEmail: email, password: password) { authResult, error in
+            if let error = error {
+                print("Login failed: \(error.localizedDescription)")
+                completion(false)
+                return
+            }
+            
+            guard authResult?.user != nil else {
+                print("Login failed: User not found")
+                completion(false)
+                return
+            }
+            
+            print("Login successful")
+            completion(true)
         }
-        
-        var updatedUser = user
-        updatedUser.updated_at = Date()
-
+    }
+    
+    func logout(completion: @escaping(Bool) -> Void) {
         do {
-            let userData = try encodeToDictionary(updatedUser)
-            db.collection("users").document(userId).setData(userData, merge: true) { error in
-                if let error = error {
-                    print("Error updating user: \(error.localizedDescription)")
-                    completion(false)
-                } else {
-                    print("User updated successfully.")
-                    completion(true)
-                }
-            }
+            try Auth.auth().signOut()
+            print( "Logout successful")
+            completion(true)
         } catch {
-            print("Error encoding user: \(error.localizedDescription)")
+            print("Logout failed: \(error.localizedDescription)")
             completion(false)
         }
     }
-
     
-    private func encodeToDictionary<T: Codable>(_ value: T) throws -> [String: Any] {
-        let jsonData = try JSONEncoder().encode(value)
-        guard let dict = try JSONSerialization.jsonObject(with: jsonData) as? [String: Any] else {
-            throw NSError(domain: "EncodingError", code: -1, userInfo: nil)
+    func isUserLoggedIn() -> Bool {
+        return Auth.auth().currentUser != nil
+    }
+    
+    func observeAuthState(changeHandler: @escaping (FirebaseAuth.User?) -> Void) -> AuthStateDidChangeListenerHandle {
+        return Auth.auth().addStateDidChangeListener { _, user in
+            changeHandler(user)
         }
-        return dict
     }
     
-    private func decodeFromDictionary<T: Codable>(_ type: T.Type, dict: [String: Any]) throws -> T {
-        let jsonData = try JSONSerialization.data(withJSONObject: dict)
-        let object = try JSONDecoder().decode(type, from: jsonData)
-        return object
+    func removeAuthStateObserver(_ handle: AuthStateDidChangeListenerHandle) {
+        Auth.auth().removeStateDidChangeListener(handle)
     }
-
 }

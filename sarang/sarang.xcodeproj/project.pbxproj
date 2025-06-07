@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		2200F9DD2DEB69F100D72CC0 /* FirebaseAnalytics in Frameworks */ = {isa = PBXBuildFile; productRef = 2200F9DC2DEB69F100D72CC0 /* FirebaseAnalytics */; };
+		2200FA802DF3DD8D00D72CC0 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 2200FA7F2DF3DD8D00D72CC0 /* FirebaseAuth */; };
 		2262AAA02DE0F1DC00FCA52D /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 2262AA9F2DE0F1DC00FCA52D /* GoogleService-Info.plist */; };
 		2262AAB22DE0F83200FCA52D /* FirebaseAnalyticsWithoutAdIdSupport in Frameworks */ = {isa = PBXBuildFile; productRef = 2262AAB12DE0F83200FCA52D /* FirebaseAnalyticsWithoutAdIdSupport */; };
 		2262AAB42DE0F83200FCA52D /* FirebaseAppCheck in Frameworks */ = {isa = PBXBuildFile; productRef = 2262AAB32DE0F83200FCA52D /* FirebaseAppCheck */; };
@@ -62,6 +63,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				2262AAB42DE0F83200FCA52D /* FirebaseAppCheck in Frameworks */,
+				2200FA802DF3DD8D00D72CC0 /* FirebaseAuth in Frameworks */,
 				2262AAB22DE0F83200FCA52D /* FirebaseAnalyticsWithoutAdIdSupport in Frameworks */,
 				2200F9DD2DEB69F100D72CC0 /* FirebaseAnalytics in Frameworks */,
 				2262AAB72DE0F87400FCA52D /* FirebaseFirestore in Frameworks */,
@@ -138,6 +140,7 @@
 				2262AAB32DE0F83200FCA52D /* FirebaseAppCheck */,
 				2262AAB62DE0F87400FCA52D /* FirebaseFirestore */,
 				2200F9DC2DEB69F100D72CC0 /* FirebaseAnalytics */,
+				2200FA7F2DF3DD8D00D72CC0 /* FirebaseAuth */,
 			);
 			productName = sarang;
 			productReference = 229C330B2DD597BF008387FD /* sarang.app */;
@@ -597,6 +600,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 2262AAB02DE0F83200FCA52D /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
 			productName = FirebaseAnalytics;
+		};
+		2200FA7F2DF3DD8D00D72CC0 /* FirebaseAuth */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 2262AAB02DE0F83200FCA52D /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAuth;
 		};
 		2262AAB12DE0F83200FCA52D /* FirebaseAnalyticsWithoutAdIdSupport */ = {
 			isa = XCSwiftPackageProductDependency;
