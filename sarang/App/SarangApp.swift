@@ -22,8 +22,8 @@ struct SarangApp: App {
                         HomeView()
                     }
                 }
-                .environmentObject(sessionManager)
             }
+            .environmentObject(sessionManager)
         }
     }
 }

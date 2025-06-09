@@ -10,6 +10,7 @@ enum AuthState {
 
 class SessionManager: ObservableObject {  
     @Published var authState: AuthState = .loading
+    @Published var errorMessage: String? = nil
     private var handle: AuthStateDidChangeListenerHandle?
 
     init() {
@@ -41,4 +42,16 @@ class SessionManager: ObservableObject {
             print("Error signing out: \(error.localizedDescription)")
         }
     }
+    
+    func setError(_ message: String) {
+            DispatchQueue.main.async {
+                self.errorMessage = message
+            }
+        }
+
+        func clearError() {
+            DispatchQueue.main.async {
+                self.errorMessage = nil
+            }
+        }
 }
