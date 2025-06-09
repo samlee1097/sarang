@@ -1,23 +1,28 @@
-//
-//  SarangApp.swift
-//  sarang
-//
-//  Created by Samuel Lee on 5/14/25.
-//
-
 import SwiftUI
 import FirebaseCore
 
 @main
 struct SarangApp: App {
+    @StateObject var sessionManager = SessionManager()
+
     init() {
         FirebaseApp.configure()
     }
-    
+
     var body: some Scene {
         WindowGroup {
             NavigationView {
-                ContentView()
+                Group {
+                    switch sessionManager.authState {
+                    case .loading:
+                        LoadingView()
+                    case .unauthenticated:
+                        LoginView()
+                    case .authenticated:
+                        HomeView()
+                    }
+                }
+                .environmentObject(sessionManager)
             }
         }
     }
