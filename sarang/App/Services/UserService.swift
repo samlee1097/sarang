@@ -1,13 +1,19 @@
 import Foundation
 import FirebaseFirestore
 
+enum UserServiceError: Error {
+    case firestore(String)
+    case decoding(String)
+    case encoding(String)
+    case unknown(String)
+}
+
 class UserService {
     private let db = Firestore.firestore()
     
-    func addUser(user: User, completion: @escaping (Bool) -> Void) {
+    func addUser(user: User, completion: @escaping (Result<Void, UserServiceError>) -> Void) {
         guard let userId = user.id else {
-            print("User id is missing, cannot add user")
-            completion(false)
+            completion(.failure(.unknown("User id is missing, cannot add user")))
             return
         }
         
@@ -23,47 +29,40 @@ class UserService {
             let userData = try encodeToDictionary(newUser)
             db.collection("users").document(userId).setData(userData) { error in
                 if let error = error {
-                    print("Error adding user: \(error.localizedDescription)")
-                    completion(false)
+                    completion(.failure(.firestore("Error adding user: \(error.localizedDescription)")))
                 } else {
-                    print("User added successfully.")
-                    completion(true)
+                    completion(.success(()))
                 }
             }
         } catch {
-            print("Error encoding user: \(error.localizedDescription)")
-            completion(false)
+            completion(.failure(.encoding("Error encoding user: \(error.localizedDescription)")))
         }
     }
     
-    func getUser(userId: String, completion: @escaping (User?) -> Void) {
+    func getUser(userId: String, completion: @escaping (Result<User, UserServiceError>) -> Void) {
         db.collection("users").document(userId).getDocument { document, error in
             if let error = error {
-                print("Error getting user: \(error.localizedDescription)")
-                completion(nil)
+                completion(.failure(.firestore("Firestore error getting user: \(error.localizedDescription)")))
                 return
             }
             
             guard let document = document, document.exists, let data = document.data() else {
-                print("User document does not exist.")
-                completion(nil)
+                completion(.failure(.unknown("User document does not exist.")))
                 return
             }
             
             do {
                 let user = try self.decodeFromDictionary(User.self, dict: data)
-                completion(user)
+                completion(.success(user))
             } catch {
-                print("Error decoding user: \(error.localizedDescription)")
-                completion(nil)
+                completion(.failure(.decoding("Error decoding user: \(error.localizedDescription)")))
             }
         }
     }
 
-    func updateUser(user: User, completion: @escaping (Bool) -> Void) {
+    func updateUser(user: User, completion: @escaping (Result<Void, UserServiceError>) -> Void) {
         guard let userId = user.id else {
-            print("User id is missing, cannot update user")
-            completion(false)
+            completion(.failure(.unknown("User id is missing, cannot update user")))
             return
         }
         
@@ -74,16 +73,13 @@ class UserService {
             let userData = try encodeToDictionary(updatedUser)
             db.collection("users").document(userId).setData(userData, merge: true) { error in
                 if let error = error {
-                    print("Error updating user: \(error.localizedDescription)")
-                    completion(false)
+                    completion(.failure(.firestore("Error updating user: \(error.localizedDescription)")))
                 } else {
-                    print("User updated successfully.")
-                    completion(true)
+                    completion(.success(()))
                 }
             }
         } catch {
-            print("Error encoding user: \(error.localizedDescription)")
-            completion(false)
+            completion(.failure(.encoding("Error encoding user: \(error.localizedDescription)")))
         }
     }
 
