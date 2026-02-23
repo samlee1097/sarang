@@ -12,9 +12,7 @@ struct LoginView: View {
         Binding<Bool>(
             get: { sessionManager.errorMessage != nil },
             set: { newValue in
-                if !newValue {
-                    sessionManager.errorMessage = nil
-                }
+                if !newValue { sessionManager.errorMessage = nil }
             }
         )
     }
@@ -47,9 +45,7 @@ struct LoginView: View {
             }
             .disabled(isLoading)
             
-            Button(action: {
-                showSignup = true
-            }) {
+            Button(action: { showSignup = true }) {
                 Text("Don't have an account? Sign Up")
                     .foregroundColor(.blue)
             }
@@ -63,9 +59,7 @@ struct LoginView: View {
             Alert(
                 title: Text("Error"),
                 message: Text(sessionManager.errorMessage ?? ""),
-                dismissButton: .default(Text("OK")) {
-                    sessionManager.errorMessage = nil
-                }
+                dismissButton: .default(Text("OK")) { sessionManager.errorMessage = nil }
             )
         }
     }
@@ -73,11 +67,21 @@ struct LoginView: View {
     private func login() {
         sessionManager.errorMessage = nil
         isLoading = true
-        Auth.auth().signIn(withEmail: email, password: password) { result, error in
+        
+        AuthService.shared.login(email: email, password: password) { result in
             DispatchQueue.main.async {
                 isLoading = false
-                if let error = error {
-                    sessionManager.errorMessage = error.localizedDescription
+                switch result {
+                case .success(let user):
+                    sessionManager.currentUser = user
+                    sessionManager.authState = .authenticated(Auth.auth().currentUser!)
+                case .failure(let error):
+                    switch error {
+                    case .firebase(let code):
+                        sessionManager.errorMessage = code.localizedDescription
+                    case .unknown(let msg):
+                        sessionManager.errorMessage = msg
+                    }
                 }
             }
         }
