@@ -2,40 +2,34 @@ import SwiftUI
 import FirebaseAuth
 
 struct LoginView: View {
+    // MARK: - Form State
     @State private var email = ""
     @State private var password = ""
-    @EnvironmentObject var sessionManager: SessionManager
     @State private var isLoading = false
     @State private var showSignup = false
-    
-    private var isShowingError: Binding<Bool> {
-        Binding<Bool>(
-            get: { sessionManager.errorMessage != nil },
-            set: { newValue in
-                if !newValue { sessionManager.errorMessage = nil }
-            }
-        )
-    }
-    
+    @State private var errorMessage: AlertError?
+
+    @EnvironmentObject var sessionManager: SessionManager
+
     var body: some View {
         VStack(spacing: 20) {
             Text("Login")
                 .font(.largeTitle)
                 .bold()
-            
+
             TextField("Email", text: $email)
                 .keyboardType(.emailAddress)
                 .autocapitalization(.none)
                 .disableAutocorrection(true)
                 .textFieldStyle(RoundedBorderTextFieldStyle())
-            
+
             SecureField("Password", text: $password)
                 .textFieldStyle(RoundedBorderTextFieldStyle())
-            
+
             if isLoading {
                 ProgressView()
             }
-            
+
             Button(action: login) {
                 Text("Login")
                     .frame(maxWidth: .infinity)
@@ -44,7 +38,7 @@ struct LoginView: View {
                     .foregroundColor(.white)
             }
             .disabled(isLoading)
-            
+
             Button(action: { showSignup = true }) {
                 Text("Don't have an account? Sign Up")
                     .foregroundColor(.blue)
@@ -55,32 +49,36 @@ struct LoginView: View {
             }
         }
         .padding()
-        .alert(isPresented: isShowingError) {
+        // MARK: - Error Alert
+        .alert(item: $errorMessage) { (alertError: AlertError) in
             Alert(
                 title: Text("Error"),
-                message: Text(sessionManager.errorMessage ?? ""),
-                dismissButton: .default(Text("OK")) { sessionManager.errorMessage = nil }
+                message: Text(alertError.message),
+                dismissButton: .default(Text("OK"))
             )
         }
     }
-    
+
+    // MARK: - Login Function
     private func login() {
-        sessionManager.errorMessage = nil
+        errorMessage = nil
         isLoading = true
-        
+
         AuthService.shared.login(email: email, password: password) { result in
             DispatchQueue.main.async {
                 isLoading = false
                 switch result {
                 case .success(let user):
                     sessionManager.currentUser = user
-                    sessionManager.authState = .authenticated(Auth.auth().currentUser!)
+                    if let authUser = Auth.auth().currentUser {
+                        sessionManager.authState = .authenticated(authUser)
+                    }
                 case .failure(let error):
                     switch error {
                     case .firebase(let code):
-                        sessionManager.errorMessage = code.localizedDescription
+                        errorMessage = AlertError(message: code.localizedDescription)
                     case .unknown(let msg):
-                        sessionManager.errorMessage = msg
+                        errorMessage = AlertError(message: msg)
                     }
                 }
             }
