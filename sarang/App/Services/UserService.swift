@@ -11,23 +11,25 @@ enum UserServiceError: Error {
 class UserService {
     private let db = Firestore.firestore()
     
-    func addUser(user: User, completion: @escaping (Result<Void, UserServiceError>) -> Void) {
-        guard let userId = user.id else {
-            completion(.failure(.unknown("User id is missing, cannot add user")))
-            return
+    /// Adds a new user. Firestore document ID is auto-generated if user.id is nil
+    func addUser(user: inout User, completion: @escaping (Result<Void, UserServiceError>) -> Void) {
+        let docRef: DocumentReference
+        if let userId = user.id, !userId.isEmpty {
+            docRef = db.collection("users").document(userId)
+        } else {
+            docRef = db.collection("users").document()
+            user.id = docRef.documentID
         }
         
-        var newUser = user
         let now = Date()
-        
-        if newUser.created_at.timeIntervalSince1970 == 0 {
-            newUser.created_at = now
+        if user.created_at.timeIntervalSince1970 == 0 {
+            user.created_at = now
         }
-        newUser.updated_at = now
+        user.updated_at = now
 
         do {
-            let userData = try encodeToDictionary(newUser)
-            db.collection("users").document(userId).setData(userData) { error in
+            let userData = try encodeToDictionary(user)
+            docRef.setData(userData) { error in
                 if let error = error {
                     completion(.failure(.firestore("Error adding user: \(error.localizedDescription)")))
                 } else {
