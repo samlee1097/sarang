@@ -1,5 +1,5 @@
-import Foundation
 import FirebaseAuth
+import Foundation
 
 enum AuthServiceError: Error {
     case firebase(AuthErrorCode)
@@ -9,54 +9,83 @@ enum AuthServiceError: Error {
 class AuthService {
     static let shared = AuthService()
     private init() {}
-    
-    let userService = UserService()
-    
-    /// Signup user and store in Firestore
-    func signUp(email: String, password: String, username: String, displayName: String, completion: @escaping (Result<User, AuthServiceError>) -> Void) {
+
+    // MARK: - Sign Up
+    func signUp(
+        email: String,
+        password: String,
+        username: String,
+        displayName: String,
+        completion: @escaping (Result<AppUser, AuthServiceError>) -> Void
+    ) {
         Auth.auth().createUser(withEmail: email, password: password) { authResult, error in
-            if let error = error as NSError?, let code = AuthErrorCode(rawValue: error.code) {
-                completion(.failure(.firebase(code)))
+            if let error = error as NSError? {
+                if let code = AuthErrorCode(rawValue: error.code) {
+                    completion(.failure(.firebase(code)))
+                } else {
+                    completion(.failure(.unknown(error.localizedDescription)))
+                }
                 return
             }
-            
-            guard let authUser = authResult?.user else {
-                completion(.failure(.unknown("Failed to get authenticated user after signup.")))
+
+            guard let fbUser = authResult?.user else {
+                completion(.failure(.unknown("User object not found after signup.")))
                 return
             }
-            
-            var appUser = UserHelper.createAppUser(from: authUser, username: username, displayName: displayName)
-            
-            self.userService.addUser(user: &appUser) { result in
-                switch result {
-                case .success():
-                    completion(.success(appUser))
-                case .failure(let error):
-                    completion(.failure(.unknown("Failed to add user to Firestore: \(error)")))
+
+            let changeRequest = fbUser.createProfileChangeRequest()
+            changeRequest.displayName = displayName
+            changeRequest.commitChanges { _ in
+                let newUser = AppUser(
+                    id: fbUser.uid,
+                    username: username,
+                    email: email,
+                    display_name: displayName,
+                    profile_image_url: "default-profile",
+                    onboarding_completed: false,
+                    created_at: Date(),
+                    updated_at: Date()
+                )
+
+                UserService().addUser(user: newUser) { result in
+                    switch result {
+                    case .success:
+                        completion(.success(newUser))
+                    case .failure(let err):
+                        completion(.failure(.unknown("Failed to save user to Firestore: \(err)")))
+                    }
                 }
             }
         }
     }
-    
-    /// Login user
-    func login(email: String, password: String, completion: @escaping (Result<User, AuthServiceError>) -> Void) {
+
+    // MARK: - Login
+    func login(
+        email: String,
+        password: String,
+        completion: @escaping (Result<AppUser, AuthServiceError>) -> Void
+    ) {
         Auth.auth().signIn(withEmail: email, password: password) { authResult, error in
-            if let error = error as NSError?, let code = AuthErrorCode(rawValue: error.code) {
-                completion(.failure(.firebase(code)))
+            if let error = error as NSError? {
+                if let code = AuthErrorCode(rawValue: error.code) {
+                    completion(.failure(.firebase(code)))
+                } else {
+                    completion(.failure(.unknown(error.localizedDescription)))
+                }
                 return
             }
-            
-            guard let authUser = authResult?.user else {
-                completion(.failure(.unknown("Failed to get authenticated user after login.")))
+
+            guard let fbUser = authResult?.user else {
+                completion(.failure(.unknown("User object not found after login.")))
                 return
             }
-            
-            self.userService.getUser(userId: authUser.uid) { result in
+
+            UserService().getUser(userId: fbUser.uid) { result in
                 switch result {
-                case .success(let user):
-                    completion(.success(user))
-                case .failure(let error):
-                    completion(.failure(.unknown("Failed to fetch user from Firestore: \(error)")))
+                case .success(let appUser):
+                    completion(.success(appUser))
+                case .failure(let err):
+                    completion(.failure(.unknown("Failed to fetch AppUser: \(err)")))
                 }
             }
         }

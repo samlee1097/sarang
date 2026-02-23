@@ -2,90 +2,91 @@ import SwiftUI
 import FirebaseAuth
 
 struct SignupView: View {
-    // MARK: - Form State
     @State private var email = ""
     @State private var password = ""
     @State private var username = ""
     @State private var displayName = ""
     @State private var isLoading = false
     @State private var errorMessage: AlertError?
-
+    
     @EnvironmentObject var sessionManager: SessionManager
-
+    
     var body: some View {
         VStack(spacing: 20) {
-            Text("Sign Up")
-                .font(.largeTitle)
-                .bold()
-
+            Text("Sign Up").font(.largeTitle).bold()
+            
             TextField("Email", text: $email)
                 .keyboardType(.emailAddress)
                 .autocapitalization(.none)
                 .disableAutocorrection(true)
                 .textFieldStyle(RoundedBorderTextFieldStyle())
-
+            
             SecureField("Password", text: $password)
                 .textFieldStyle(RoundedBorderTextFieldStyle())
-
+            
             TextField("Username", text: $username)
                 .autocapitalization(.none)
                 .disableAutocorrection(true)
                 .textFieldStyle(RoundedBorderTextFieldStyle())
-
+            
             TextField("Display Name", text: $displayName)
                 .autocapitalization(.words)
                 .disableAutocorrection(true)
                 .textFieldStyle(RoundedBorderTextFieldStyle())
-
-            if isLoading {
-                ProgressView()
-            }
-
-            Button(action: signUp) {
-                Text("Sign Up")
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(Color.green.cornerRadius(8))
-                    .foregroundColor(.white)
-            }
-            .disabled(isLoading)
+            
+            if isLoading { ProgressView() }
+            
+            Button("Sign Up", action: signUp)
+                .frame(maxWidth: .infinity)
+                .padding()
+                .background(Color.green.cornerRadius(8))
+                .foregroundColor(.white)
+                .disabled(isLoading)
         }
         .padding()
-        // MARK: - Error Alert
-        .alert(item: $errorMessage) { (alertError: AlertError) in
-            Alert(
-                title: Text("Error"),
-                message: Text(alertError.message),
-                dismissButton: .default(Text("OK"))
-            )
+        .alert(item: $errorMessage) { alert in
+            Alert(title: Text("Error"), message: Text(alert.message), dismissButton: .default(Text("OK")))
         }
     }
-
-    // MARK: - Signup Function
+    
     private func signUp() {
-        errorMessage = nil
         isLoading = true
-
-        AuthService.shared.signUp(
-            email: email,
-            password: password,
-            username: username,
-            displayName: displayName
-        ) { result in
+        errorMessage = nil
+        
+        Auth.auth().createUser(withEmail: email, password: password) { result, error in
             DispatchQueue.main.async {
                 isLoading = false
-                switch result {
-                case .success(let user):
-                    sessionManager.currentUser = user
-                    if let authUser = Auth.auth().currentUser {
-                        sessionManager.authState = .authenticated(authUser)
-                    }
-                case .failure(let error):
-                    switch error {
-                    case .firebase(let code):
-                        errorMessage = AlertError(message: code.localizedDescription)
-                    case .unknown(let msg):
-                        errorMessage = AlertError(message: msg)
+                
+                if let error = error as NSError? {
+                    errorMessage = AlertError(message: error.localizedDescription)
+                    return
+                }
+                
+                guard let fbUser = result?.user else {
+                    errorMessage = AlertError(message: "Signup succeeded but no user returned")
+                    return
+                }
+                
+                // Create Firestore user
+                let appUser = AppUser(
+                    id: fbUser.uid,
+                    username: username,
+                    email: email,
+                    display_name: displayName,
+                    profile_image_url: "default_profile",
+                    onboarding_completed: false,
+                    created_at: Date(),
+                    updated_at: Date()
+                )
+                
+                UserService().addUser(user: appUser) { result in
+                    DispatchQueue.main.async {
+                        switch result {
+                        case .success:
+                            sessionManager.authState = .authenticated(appUser)
+                        case .failure(let error):
+                            errorMessage = AlertError(message: "Signup succeeded but failed to save user: \(error)")
+                        }
                     }
                 }
             }

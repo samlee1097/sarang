@@ -12,16 +12,7 @@ struct SarangApp: App {
     var body: some Scene {
         WindowGroup {
             NavigationView {
-                Group {
-                    switch sessionManager.authState {
-                    case .loading:
-                        LoadingView()
-                    case .unauthenticated:
-                        LoginView()
-                    case .authenticated:
-                        HomeView()
-                    }
-                }
+                RootView()
             }
             .environmentObject(sessionManager)
         }

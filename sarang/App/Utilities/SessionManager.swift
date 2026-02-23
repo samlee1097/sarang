@@ -1,58 +1,61 @@
-import FirebaseAuth
 import SwiftUI
-import Combine
+import FirebaseAuth
 
+// MARK: - Auth State
 enum AuthState {
     case loading
-    case authenticated(FirebaseAuth.User)
+    case authenticated(AppUser)
     case unauthenticated
 }
 
+// MARK: - Session Manager
 class SessionManager: ObservableObject {
     @Published var authState: AuthState = .loading
-    @Published var currentUser: User? = nil
-    @Published var errorMessage: String? = nil
     
     private var handle: AuthStateDidChangeListenerHandle?
-    
+
     init() {
         listenToAuthChanges()
     }
-    
+
     private func listenToAuthChanges() {
-        handle = Auth.auth().addStateDidChangeListener { [weak self] _, user in
+        handle = Auth.auth().addStateDidChangeListener { [weak self] _, fbUser in
+            guard let self = self else { return }
+            
             DispatchQueue.main.async {
-                if let user = user {
-                    self?.authState = .authenticated(user)
-                    // Fetch Firestore user
-                    UserService().getUser(userId: user.uid) { result in
-                        switch result {
-                        case .success(let appUser):
-                            self?.currentUser = appUser
-                        case .failure:
-                            self?.currentUser = nil
+                if let fbUser = fbUser {
+                    // Fetch AppUser from Firestore
+                    UserService().getUser(userId: fbUser.uid) { result in
+                        DispatchQueue.main.async {
+                            switch result {
+                            case .success(let appUser):
+                                self.authState = .authenticated(appUser)
+                            case .failure(let error):
+                                print("❌ Failed to fetch AppUser:", error)
+                                self.authState = .unauthenticated
+                            }
                         }
                     }
+
                 } else {
-                    self?.authState = .unauthenticated
-                    self?.currentUser = nil
+                    self.authState = .unauthenticated
                 }
             }
         }
     }
-    
-    deinit {
-        if let handle = handle {
-            Auth.auth().removeStateDidChangeListener(handle)
-        }
-    }
-    
+
     func signOut() {
         do {
             try Auth.auth().signOut()
-            currentUser = nil
+            authState = .unauthenticated
         } catch {
-            print("Error signing out: \(error.localizedDescription)")
+            print("❌ Sign out error:", error.localizedDescription)
+        }
+    }
+
+    deinit {
+        if let handle = handle {
+            Auth.auth().removeStateDidChangeListener(handle)
         }
     }
 }

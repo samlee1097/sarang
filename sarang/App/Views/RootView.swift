@@ -10,12 +10,9 @@ struct RootView: View {
                 LoadingView()
             case .unauthenticated:
                 LoginView()
-            case .authenticated:
-                if let user = sessionManager.currentUser {
-                    MainAppView(user: user)
-                } else {
-                    LoadingView()
-                }
+            case .authenticated(let user):
+                // Pass the authenticated AppUser to MainAppView
+                MainAppView(user: user)
             }
         }
     }

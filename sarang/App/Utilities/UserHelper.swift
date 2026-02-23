@@ -2,8 +2,8 @@ import FirebaseAuth
 import Foundation
 
 struct UserHelper {
-    static func createAppUser(from authUser: FirebaseAuth.User, username: String, displayName: String) -> User {
-        return User(
+    static func createAppUser(from authUser: FirebaseAuth.User, username: String, displayName: String) -> AppUser {
+        return AppUser(
             id: authUser.uid,
             username: username,
             email: authUser.email ?? "",

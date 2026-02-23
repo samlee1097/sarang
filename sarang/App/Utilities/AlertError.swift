@@ -1,4 +1,4 @@
-import SwiftUI
+import Foundation
 
 struct AlertError: Identifiable {
     let id = UUID()

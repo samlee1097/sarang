@@ -12,23 +12,22 @@ class UserService {
     private let db = Firestore.firestore()
     
     /// Adds a new user. Firestore document ID is auto-generated if user.id is nil
-    func addUser(user: inout User, completion: @escaping (Result<Void, UserServiceError>) -> Void) {
+    func addUser(user: AppUser, completion: @escaping (Result<Void, UserServiceError>) -> Void) {
+        var newUser = user // make mutable copy
+
         let docRef: DocumentReference
-        if let userId = user.id, !userId.isEmpty {
+        if let userId = newUser.id, !userId.isEmpty {
             docRef = db.collection("users").document(userId)
         } else {
             docRef = db.collection("users").document()
-            user.id = docRef.documentID
+            newUser.id = docRef.documentID
         }
-        
+
         let now = Date()
-        if user.created_at.timeIntervalSince1970 == 0 {
-            user.created_at = now
-        }
-        user.updated_at = now
+        newUser.updated_at = now
 
         do {
-            let userData = try encodeToDictionary(user)
+            let userData = try encodeToDictionary(newUser)
             docRef.setData(userData) { error in
                 if let error = error {
                     completion(.failure(.firestore("Error adding user: \(error.localizedDescription)")))
@@ -41,7 +40,7 @@ class UserService {
         }
     }
     
-    func getUser(userId: String, completion: @escaping (Result<User, UserServiceError>) -> Void) {
+    func getUser(userId: String, completion: @escaping (Result<AppUser, UserServiceError>) -> Void) {
         db.collection("users").document(userId).getDocument { document, error in
             if let error = error {
                 completion(.failure(.firestore("Firestore error getting user: \(error.localizedDescription)")))
@@ -54,7 +53,7 @@ class UserService {
             }
             
             do {
-                let user = try self.decodeFromDictionary(User.self, dict: data)
+                let user = try self.decodeFromDictionary(AppUser.self, dict: data)
                 completion(.success(user))
             } catch {
                 completion(.failure(.decoding("Error decoding user: \(error.localizedDescription)")))
@@ -62,7 +61,7 @@ class UserService {
         }
     }
 
-    func updateUser(user: User, completion: @escaping (Result<Void, UserServiceError>) -> Void) {
+    func updateUser(user: AppUser, completion: @escaping (Result<Void, UserServiceError>) -> Void) {
         guard let userId = user.id else {
             completion(.failure(.unknown("User id is missing, cannot update user")))
             return
