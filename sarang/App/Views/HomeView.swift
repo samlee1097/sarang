@@ -3,6 +3,7 @@ import SwiftUI
 struct HomeView: View {
     @EnvironmentObject var sessionManager: SessionManager
     @State private var currentIndex = 0
+    @StateObject private var viewModel = HomeViewModel()
 
     let ideas: [DateIdea] = [
         DateIdea(id: "1", title: "Try a pottery class", description: "Get creative together"),
@@ -44,8 +45,11 @@ struct HomeView: View {
     func handleSwipe(liked: Bool) {
         let idea = ideas[currentIndex]
 
-        print("Swiped \(liked ? "LIKE" : "NO") on \(idea.title)")
-        print("INDEX:", currentIndex, "COUNT:", ideas.count)
+        viewModel.handleSwipe(
+            userId: sessionManager.currentUserId,
+            ideaId: idea.id,
+            liked: liked
+        )
 
         withAnimation(.spring()) {
             currentIndex += 1
