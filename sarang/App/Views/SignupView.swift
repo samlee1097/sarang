@@ -10,42 +10,52 @@ struct SignupView: View {
     @State private var errorMessage: AlertError?
     
     @EnvironmentObject var sessionManager: SessionManager
+    @Environment(\.dismiss) private var dismiss
     
     var body: some View {
-        VStack(spacing: 20) {
-            Text("Sign Up").font(.largeTitle).bold()
-            
-            TextField("Email", text: $email)
-                .keyboardType(.emailAddress)
-                .autocapitalization(.none)
-                .disableAutocorrection(true)
-                .textFieldStyle(RoundedBorderTextFieldStyle())
-            
-            SecureField("Password", text: $password)
-                .textFieldStyle(RoundedBorderTextFieldStyle())
-            
-            TextField("Username", text: $username)
-                .autocapitalization(.none)
-                .disableAutocorrection(true)
-                .textFieldStyle(RoundedBorderTextFieldStyle())
-            
-            TextField("Display Name", text: $displayName)
-                .autocapitalization(.words)
-                .disableAutocorrection(true)
-                .textFieldStyle(RoundedBorderTextFieldStyle())
-            
-            if isLoading { ProgressView() }
-            
-            Button("Sign Up", action: signUp)
-                .frame(maxWidth: .infinity)
-                .padding()
-                .background(Color.green.cornerRadius(8))
-                .foregroundColor(.white)
-                .disabled(isLoading)
-        }
-        .padding()
-        .alert(item: $errorMessage) { alert in
-            Alert(title: Text("Error"), message: Text(alert.message), dismissButton: .default(Text("OK")))
+        NavigationStack {
+            VStack(spacing: 20) {
+                Text("Sign Up").font(.largeTitle).bold()
+                
+                TextField("Email", text: $email)
+                    .keyboardType(.emailAddress)
+                    .autocapitalization(.none)
+                    .disableAutocorrection(true)
+                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                
+                SecureField("Password", text: $password)
+                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                
+                TextField("Username", text: $username)
+                    .autocapitalization(.none)
+                    .disableAutocorrection(true)
+                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                
+                TextField("Display Name", text: $displayName)
+                    .autocapitalization(.words)
+                    .disableAutocorrection(true)
+                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                
+                if isLoading { ProgressView() }
+                
+                Button("Sign Up", action: signUp)
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(Color.green.cornerRadius(8))
+                    .foregroundColor(.white)
+                    .disabled(isLoading)
+            }
+            .padding()
+            .alert(item: $errorMessage) { alert in
+                Alert(title: Text("Error"), message: Text(alert.message), dismissButton: .default(Text("OK")))
+            }
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button(action: { dismiss() }) {
+                        Image(systemName: "xmark")
+                    }
+                }
+            }
         }
     }
     
