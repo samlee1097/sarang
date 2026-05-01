@@ -33,6 +33,42 @@ struct SwipeDeckView: View {
                             .foregroundColor(.secondary)
                     }
                     .transition(.asymmetric(insertion: .move(edge: .trailing), removal: .move(edge: .leading)))
+                    
+                    HStack(spacing: 60) {
+                        // Left Button (Dislike)
+                        Button(action: {
+                            withAnimation(.interpolatingSpring(stiffness: 150, damping: 15)) {
+                                // We simulate a swipe by calling the same handler as the gesture
+                                let userId = user.id ?? ""
+                                viewModel.handleSwipe(userId: userId, partnerId: user.partnerId, liked: false)
+                            }
+                        }) {
+                            Image(systemName: "xmark")
+                                .font(.system(size: 25, weight: .bold))
+                                .foregroundColor(.red)
+                                .frame(width: 65, height: 65)
+                                .background(Color.white)
+                                .clipShape(Circle())
+                                .shadow(color: .black.opacity(0.15), radius: 10, y: 5)
+                        }
+
+                        // Right Button (Like)
+                        Button(action: {
+                            withAnimation(.interpolatingSpring(stiffness: 150, damping: 15)) {
+                                let userId = user.id ?? ""
+                                viewModel.handleSwipe(userId: userId, partnerId: user.partnerId, liked: true)
+                            }
+                        }) {
+                            Image(systemName: "heart.fill")
+                                .font(.system(size: 30))
+                                .foregroundColor(.green)
+                                .frame(width: 75, height: 75)
+                                .background(Color.white)
+                                .clipShape(Circle())
+                                .shadow(color: .black.opacity(0.15), radius: 10, y: 5)
+                        }
+                    }
+                    .padding(.bottom, 30)
                 } else {
                     VStack(spacing: 20) {
                         Text("🎉").font(.system(size: 60))

@@ -30,6 +30,9 @@ struct ProfileView: View {
                         
                         // 5. Destructive Actions
                         logoutSection
+                        
+                        // 6. Maintenance Tools
+                        developerSection
                     }
                     .padding(.vertical)
                 }
@@ -138,6 +141,24 @@ struct ProfileView: View {
                 .padding()
                 .frame(maxWidth: .infinity)
                 .background(RoundedRectangle(cornerRadius: 12).stroke(Color.red, lineWidth: 1))
+        }
+        .padding(.horizontal)
+    }
+    
+    private var developerSection: some View {
+        Button(action: {
+            DateIdeaSeeder().clearAndReseed()
+        }) {
+            HStack {
+                Image(systemName: "arrow.clockwise.circle.fill")
+                Text("Refresh Date Deck")
+                    .font(.subheadline.bold())
+            }
+            .foregroundColor(.secondary)
+            .padding()
+            .frame(maxWidth: .infinity)
+            .background(Color(.systemGray6))
+            .cornerRadius(12)
         }
         .padding(.horizontal)
     }
