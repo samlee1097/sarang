@@ -1,8 +1,9 @@
 import SwiftUI
-import FirebaseCore
+import Firebase
 
 @main
 struct SarangApp: App {
+
     @StateObject var sessionManager = SessionManager()
 
     init() {
@@ -11,10 +12,8 @@ struct SarangApp: App {
 
     var body: some Scene {
         WindowGroup {
-            NavigationView {
-                RootView()
-            }
-            .environmentObject(sessionManager)
+            RootView()
+                .environmentObject(sessionManager)
         }
     }
 }

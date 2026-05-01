@@ -1,11 +1,10 @@
 import Foundation
 import FirebaseFirestore
 
-struct UserSchedule: Codable, Identifiable {
+struct CategoryInterest: Codable, Identifiable {
     var id: String?
-    var created_by: String
-    var title: String
-    var is_shared: Bool
+    var name: String
+    var category: String
     @FirestoreDate var created_at: Date
     @FirestoreDate var updated_at: Date
 }

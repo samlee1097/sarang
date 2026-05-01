@@ -1,7 +1,7 @@
 import Foundation
 import FirebaseFirestore
 
-struct Subscription: Codable, Identifiable {
+struct UserSubscription: Codable, Identifiable {
     var id: String?
     var app_user_id: String
     var schedule_id: String

@@ -1,18 +1,18 @@
-import SwiftUI
+import Foundation
 import FirebaseAuth
 
-// MARK: - Auth State
 enum AuthState {
     case loading
     case authenticated(AppUser)
     case unauthenticated
 }
 
-// MARK: - Session Manager
-class SessionManager: ObservableObject {
+final class SessionManager: ObservableObject {
+
     @Published var authState: AuthState = .loading
-    
+
     private var handle: AuthStateDidChangeListenerHandle?
+    private let userService = UserService()   // ✅ moved here
 
     init() {
         listenToAuthChanges()
@@ -21,24 +21,23 @@ class SessionManager: ObservableObject {
     private func listenToAuthChanges() {
         handle = Auth.auth().addStateDidChangeListener { [weak self] _, fbUser in
             guard let self = self else { return }
-            
-            DispatchQueue.main.async {
-                if let fbUser = fbUser {
-                    // Fetch AppUser from Firestore
-                    UserService().getUser(userId: fbUser.uid) { result in
-                        DispatchQueue.main.async {
-                            switch result {
-                            case .success(let appUser):
-                                self.authState = .authenticated(appUser)
-                            case .failure(let error):
-                                print("❌ Failed to fetch AppUser:", error)
-                                self.authState = .unauthenticated
-                            }
-                        }
-                    }
 
-                } else {
+            guard let fbUser = fbUser else {
+                DispatchQueue.main.async {
                     self.authState = .unauthenticated
+                }
+                return
+            }
+
+            self.userService.getUser(userId: fbUser.uid) { result in
+                DispatchQueue.main.async {
+                    switch result {
+                    case .success(let appUser):
+                        self.authState = .authenticated(appUser)
+                    case .failure(let error):
+                        print("❌ Failed to fetch user:", error)
+                        self.authState = .unauthenticated
+                    }
                 }
             }
         }
@@ -51,6 +50,19 @@ class SessionManager: ObservableObject {
         } catch {
             print("❌ Sign out error:", error.localizedDescription)
         }
+    }
+
+    // MARK: Helpers (IMPORTANT for swipe system later)
+
+    var currentUser: AppUser? {
+        if case .authenticated(let user) = authState {
+            return user
+        }
+        return nil
+    }
+
+    var currentUserId: String? {
+        currentUser?.id
     }
 
     deinit {

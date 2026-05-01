@@ -1,7 +1,7 @@
 import Foundation
 import FirebaseFirestore
 
-struct Event: Codable, Identifiable {
+struct DateEvent: Codable, Identifiable {
     var id: String?
     var schedule_id: String
     var created_by: String
