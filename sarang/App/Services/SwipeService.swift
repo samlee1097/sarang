@@ -2,18 +2,17 @@ import FirebaseFirestore
 
 class SwipeService {
 
-    private let db = Firestore.firestore()
-
     func saveSwipe(userId: String, ideaId: String, liked: Bool) {
+
+        let db = Firestore.firestore()
 
         db.collection("userSwipes")
             .document(userId)
             .collection("swipes")
             .document(ideaId)
             .setData([
-                "liked": liked,
-                "userId": userId,
                 "ideaId": ideaId,
+                "liked": liked,
                 "timestamp": Timestamp()
             ])
     }

@@ -3,6 +3,7 @@ import SwiftUI
 struct ProfileView: View {
 
     @EnvironmentObject var sessionManager: SessionManager
+    @EnvironmentObject var appState: AppState
     @StateObject private var viewModel = ProfileViewModel()
 
     var body: some View {
@@ -46,6 +47,10 @@ struct ProfileView: View {
                 }
 
                 Divider()
+                
+                Button("Seed Date Ideas") {
+                    DateIdeaSeeder().seedIdeas()
+                }
 
                 Spacer()
 
@@ -63,8 +68,8 @@ struct ProfileView: View {
             }
             .padding()
             .onAppear {
-                if let userId = user.id {
-                    viewModel.fetchStats(userId: userId)
+                if let userId = sessionManager.currentUserId {
+                    appState.loadUserData(userId: userId)
                 }
             }
 

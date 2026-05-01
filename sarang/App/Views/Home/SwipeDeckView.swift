@@ -20,18 +20,29 @@ struct SwipeDeckView: View {
                 .id(viewModel.currentIndex)
 
             } else {
-                Text("No more ideas 🎉")
+                if viewModel.isLoading {
+                    ProgressView("Loading ideas...")
+                } else if let idea = viewModel.currentIdea {
+                    DateIdeaCard(idea: idea) { liked in
+                        handleSwipe(liked: liked)
+                    }
+                    .id(viewModel.currentIndex)
+                } else {
+                    Text("No more ideas 🎉")
+                }
             }
         }
         .onAppear {
-            if let userId = sessionManager.currentUserId {
-                viewModel.loadIdeas(userId: userId)
-            }
+            guard let userId = sessionManager.currentUserId else { return }
+            appState.loadUserData(userId: userId)
+        }
+        .onAppear {
+            guard let userId = sessionManager.currentUserId else { return }
+            appState.loadUserData(userId: userId)
         }
     }
 
     private func handleSwipe(liked: Bool) {
-
         guard let userId = sessionManager.currentUserId else { return }
 
         withAnimation(.spring()) {

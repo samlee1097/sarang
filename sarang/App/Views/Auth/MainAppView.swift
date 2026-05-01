@@ -9,9 +9,8 @@ struct MainAppView: View {
         TabView {
 
             SwipeDeckView()
-                .environmentObject(appState.homeViewModel)
                 .tabItem {
-                    Label("Home", systemImage: "house")
+                    Label("Discover", systemImage: "heart")
                 }
 
             ProfileView()

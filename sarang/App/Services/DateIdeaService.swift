@@ -11,14 +11,15 @@ class DateIdeaService {
                 completion([])
                 return
             }
-
+                
             let ideas: [DateIdea] = snapshot?.documents.compactMap { doc in
                 let data = doc.data()
 
                 return DateIdea(
                     id: doc.documentID,
                     title: data["title"] as? String ?? "",
-                    description: data["description"] as? String ?? ""
+                    description: data["description"] as? String ?? "",
+                    category: data["category"] as? String ?? ""
                 )
             } ?? []
 

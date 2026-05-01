@@ -98,4 +98,14 @@ class UserService {
         let object = try JSONDecoder().decode(type, from: jsonData)
         return object
     }
+    
+    func savePreferences(userId: String, categories: [String]) {
+
+        Firestore.firestore()
+            .collection("users")
+            .document(userId)
+            .updateData([
+                "preferences": categories
+            ])
+    }
 }

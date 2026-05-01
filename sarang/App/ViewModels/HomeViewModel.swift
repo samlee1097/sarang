@@ -4,13 +4,18 @@ import FirebaseFirestore
 class HomeViewModel: ObservableObject {
 
     @Published var ideas: [DateIdea] = []
+    @Published var isLoading: Bool = false
     @Published var swipedIdeaIds: Set<String> = []
     @Published var currentIndex: Int = 0
 
     private let service = DateIdeaService()
     private let swipeService = SwipeService()
 
-    func loadIdeas(userId: String) {
+    func loadIdeas(userId: String, preferences: [String]) {
+
+        DispatchQueue.main.async {
+            self.isLoading = true
+        }
 
         let db = Firestore.firestore()
 
@@ -21,20 +26,11 @@ class HomeViewModel: ObservableObject {
 
                 guard let self = self else { return }
 
-                if let error = error {
-                    print("❌ Swipe fetch error:", error)
-                    return
-                }
-
                 let swipes = swipeSnapshot?.documents ?? []
 
                 let swipedIds = Set(
                     swipes.compactMap { $0.data()["ideaId"] as? String }
                 )
-
-                DispatchQueue.main.async {
-                    self.swipedIdeaIds = swipedIds
-                }
 
                 self.service.fetchIdeas { [weak self] ideas in
 
@@ -44,9 +40,15 @@ class HomeViewModel: ObservableObject {
                         !swipedIds.contains($0.id)
                     }
 
+                    let ranked = self.rankIdeas(
+                        filtered,
+                        preferences: preferences
+                    )
+
                     DispatchQueue.main.async {
-                        self.ideas = filtered
+                        self.ideas = ranked
                         self.currentIndex = 0
+                        self.isLoading = false
                     }
                 }
             }
@@ -67,5 +69,27 @@ class HomeViewModel: ObservableObject {
         )
 
         currentIndex += 1
+    }
+    
+    func rankIdeas(_ ideas: [DateIdea], preferences: [String]) -> [DateIdea] {
+
+        return ideas.sorted { a, b in
+
+            let scoreA = score(idea: a, preferences: preferences)
+            let scoreB = score(idea: b, preferences: preferences)
+
+            return scoreA > scoreB
+        }
+    }
+    
+    private func score(idea: DateIdea, preferences: [String]) -> Int {
+
+        let category = idea.category
+
+        if preferences.contains(category) {
+            return 3
+        } else {
+            return 1
+        }
     }
 }
