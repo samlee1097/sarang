@@ -7,7 +7,6 @@ class HomeViewModel: ObservableObject {
     @Published var isLoading: Bool = false
     @Published var currentIndex: Int = 0
 
-    // Ensure these services are initialized or available
     private let service = DateIdeaService()
     private let swipeService = SwipeService()
     private let db = Firestore.firestore()
@@ -20,12 +19,13 @@ class HomeViewModel: ObservableObject {
 
         db.collection("userSwipes").document(userId).collection("swipes")
             .getDocuments { [weak self] snapshot, _ in
+                // 1. Unwrap the ID when building the Set
                 let swipedIds = Set(snapshot?.documents.compactMap { $0.data()["ideaId"] as? String } ?? [])
 
                 self?.service.fetchIdeas { allIdeas in
                     let freshIdeas = allIdeas.filter { idea in
-                        // Use !swipedIds.contains(idea.id ?? "") if id is optional
-                        !swipedIds.contains(idea.id)
+                        // 2. Use nil-coalescing (?? "") to compare the optional id to the Set
+                        !swipedIds.contains(idea.id ?? "")
                     }
                     
                     let ranked = self?.rankIdeas(freshIdeas, preferences: preferences) ?? []
@@ -45,8 +45,8 @@ class HomeViewModel: ObservableObject {
     }
 
     func handleSwipe(userId: String, partnerId: String?, liked: Bool) {
-        guard let idea = currentIdea else { return }
-        let ideaId = idea.id
+        // 3. Safely unwrap the current idea and its ID
+        guard let idea = currentIdea, let ideaId = idea.id else { return }
 
         swipeService.saveSwipe(
             userId: userId,
@@ -58,7 +58,7 @@ class HomeViewModel: ObservableObject {
             matchService.checkForMatch(userId: userId, partnerId: pId, ideaId: ideaId) { isMatch in
                 if isMatch {
                     print("💖 It's a match!")
-                    // TODO: Trigger a UI alert or overlay here
+                    // We'll add the popup logic here next
                 }
             }
         }
@@ -75,7 +75,7 @@ class HomeViewModel: ObservableObject {
     }
 
     private func score(idea: DateIdea, preferences: [String]) -> Int {
-        // Handle optional category if necessary
+        // Using an empty string fallback if category was optional
         return preferences.contains(idea.category) ? 3 : 1
     }
 }
