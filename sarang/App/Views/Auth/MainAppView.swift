@@ -8,7 +8,7 @@ struct MainAppView: View {
     var body: some View {
         TabView {
 
-            SwipeDeckView()
+            SwipeDeckView(user: user)
                 .tabItem {
                     Label("Discover", systemImage: "heart")
                 }

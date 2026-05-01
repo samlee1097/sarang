@@ -1,20 +1,23 @@
 import SwiftUI
 
 struct HomeView: View {
-
     @EnvironmentObject var sessionManager: SessionManager
     
     var body: some View {
         switch sessionManager.authState {
-            
         case .loading:
-            ProgressView()
+            ProgressView("Setting the mood...")
             
         case .unauthenticated:
-            Text("Not logged in")
+            VStack {
+                Text("Please log in to see date ideas.")
+                Button("Go to Login") {
+                    sessionManager.signOut()
+                }
+            }
             
-        case .authenticated:
-            SwipeDeckView()
+        case .authenticated(let user):
+            SwipeDeckView(user: user)
         }
     }
 }

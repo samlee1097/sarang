@@ -1,55 +1,50 @@
 import SwiftUI
 
 struct SwipeDeckView: View {
-
-    @EnvironmentObject var sessionManager: SessionManager
-    @EnvironmentObject var appState: AppState
-
-    var viewModel: HomeViewModel {
-        appState.homeViewModel
-    }
-
+    let user: AppUser
+    
+    @StateObject private var viewModel = HomeViewModel()
+    
     var body: some View {
-        VStack {
-
-            if let idea = viewModel.currentIdea {
-
-                DateIdeaCard(idea: idea) { liked in
-                    handleSwipe(liked: liked)
+        ZStack {
+            if viewModel.isLoading {
+                VStack(spacing: 20) {
+                    ProgressView()
+                        .scaleEffect(1.5)
+                    Text("Curating your perfect date...")
+                        .foregroundColor(.gray)
                 }
-                .id(viewModel.currentIndex)
-
-            } else {
-                if viewModel.isLoading {
-                    ProgressView("Loading ideas...")
-                } else if let idea = viewModel.currentIdea {
+            } else if let idea = viewModel.currentIdea {
+                VStack(spacing: 20) {
                     DateIdeaCard(idea: idea) { liked in
-                        handleSwipe(liked: liked)
+                        // Use nil-coalescing since user.id is optional in your struct
+                        let userId = user.id ?? ""
+                        viewModel.handleSwipe(userId: userId, liked: liked)
                     }
                     .id(viewModel.currentIndex)
-                } else {
-                    Text("No more ideas 🎉")
+                    
+                    Text("\(viewModel.ideas.count - viewModel.currentIndex) ideas remaining")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+                .transition(.asymmetric(insertion: .move(edge: .trailing), removal: .move(edge: .leading)))
+            } else {
+                VStack(spacing: 20) {
+                    Text("🎉").font(.system(size: 60))
+                    Text("You've seen everything!").font(.headline)
+                    
+                    Button("Refresh Feed") {
+                        // Pass empty array if preferences aren't in your AppUser struct yet
+                        viewModel.loadIdeas(userId: user.id ?? "", preferences: [])
+                    }
+                    .buttonStyle(.bordered)
                 }
             }
         }
-        .onAppear {
-            guard let userId = sessionManager.currentUserId else { return }
-            appState.loadUserData(userId: userId)
-        }
-        .onAppear {
-            guard let userId = sessionManager.currentUserId else { return }
-            appState.loadUserData(userId: userId)
-        }
-    }
-
-    private func handleSwipe(liked: Bool) {
-        guard let userId = sessionManager.currentUserId else { return }
-
-        withAnimation(.spring()) {
-            viewModel.handleSwipe(
-                userId: userId,
-                liked: liked
-            )
+        .padding()
+        .task {
+            // Trigger load as soon as the view appears
+            viewModel.loadIdeas(userId: user.id ?? "", preferences: [])
         }
     }
 }
