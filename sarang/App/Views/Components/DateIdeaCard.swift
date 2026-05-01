@@ -3,12 +3,18 @@ import SwiftUI
 struct DateIdeaCard: View {
     let idea: DateIdea
     let onSwipe: (Bool) -> Void
+    var forcedSwipe: Bool? // Nil = no action, True = Like, False = Nope
     
     @State private var offset: CGSize = .zero
+    @State private var isRemoved = false
     
+    // UI Sensitivity Constants
+    private let screenCutoff: CGFloat = 120
+    private let stampFadeStart: CGFloat = 80
+
     private var swipeColor: Color {
-        let progress = min(abs(offset.width) / 180.0, 1.0)
-        let intensity = 0.05 + (progress * 0.35)
+        let progress = min(abs(offset.width) / 150.0, 1.0)
+        let intensity = 0.05 + (progress * 0.3)
         
         if offset.width > 0 {
             return Color.mint.opacity(intensity)
@@ -21,25 +27,26 @@ struct DateIdeaCard: View {
     
     var body: some View {
         ZStack {
-            // 📦 CARD BACKGROUND (Using .continuous for smoother Apple-style corners)
+            // 1. Card Surface
             RoundedRectangle(cornerRadius: 30, style: .continuous)
                 .fill(
                     LinearGradient(
-                        colors: [Color.white, Color(.systemGray6)],
+                        colors: [.white, Color(.systemGray6)],
                         startPoint: .top,
                         endPoint: .bottom
                     )
                 )
             
-            // 🔥 SWIPE GLOW
+            // 2. Swipe Color Glow
             RoundedRectangle(cornerRadius: 30, style: .continuous)
                 .fill(swipeColor)
             
-            // 🧠 CONTENT
-            VStack(spacing: 16) {
+            // 3. Content
+            VStack(spacing: 20) {
+                categoryIcon(for: idea.category)
+                
                 Text(idea.title)
-                    .font(.system(.title2, design: .rounded))
-                    .bold()
+                    .font(.system(.title2, design: .rounded)).bold()
                     .multilineTextAlignment(.center)
                 
                 Text(idea.description)
@@ -47,34 +54,28 @@ struct DateIdeaCard: View {
                     .foregroundColor(.secondary)
                     .multilineTextAlignment(.center)
                     .lineLimit(3)
+                    .padding(.horizontal)
             }
             .padding(30)
             
-            // ✅ LIKE STAMP (Appears on Swipe Right)
-            Text("LIKE")
-                .font(.system(size: 45, weight: .black, design: .rounded))
-                .foregroundColor(.mint)
-                .padding(.horizontal, 15)
-                .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.mint, lineWidth: 5))
-                .opacity(Double(offset.width / 120)) // Fades in as you drag right
-                .rotationEffect(.degrees(-15))
-                .position(x: 80, y: 80) // Top-left of the card
+            // 4. Interaction Stamps
+            stamp(text: "LIKE", color: .mint, rotation: -15, alignment: .topLeading)
+                .opacity(Double(offset.width / stampFadeStart))
             
-            // ❌ NOPE STAMP (Appears on Swipe Left)
-            Text("NOPE")
-                .font(.system(size: 45, weight: .black, design: .rounded))
-                .foregroundColor(.pink)
-                .padding(.horizontal, 15)
-                .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.pink, lineWidth: 5))
-                .opacity(Double(-offset.width / 120)) // Fades in as you drag left
-                .rotationEffect(.degrees(15))
-                .position(x: 240, y: 80) // Top-right of the card
+            stamp(text: "NOPE", color: .pink, rotation: 15, alignment: .topTrailing)
+                .opacity(Double(-offset.width / stampFadeStart))
         }
         .frame(width: 320, height: 450)
-        // Softened shadow for a modern look
         .shadow(color: .black.opacity(0.1), radius: 20, x: 0, y: 10)
         .offset(offset)
         .rotationEffect(.degrees(Double(offset.width / 18)))
+        .onChange(of: forcedSwipe) { oldValue, newValue in
+            if let direction = newValue {
+                moveAndSwipe(liked: direction)
+            }
+        }
+        
+        // Handle physical drag
         .gesture(
             DragGesture()
                 .onChanged { value in
@@ -83,9 +84,9 @@ struct DateIdeaCard: View {
                 .onEnded { value in
                     let velocity = value.predictedEndTranslation.width
                     
-                    if offset.width > 120 || velocity > 500 {
+                    if offset.width > screenCutoff || velocity > 500 {
                         swipe(liked: true)
-                    } else if offset.width < -120 || velocity < -500 {
+                    } else if offset.width < -screenCutoff || velocity < -500 {
                         swipe(liked: false)
                     } else {
                         withAnimation(.spring(response: 0.4, dampingFraction: 0.6)) {
@@ -96,10 +97,62 @@ struct DateIdeaCard: View {
         )
     }
     
-    private func swipe(liked: Bool) {
-        withAnimation(.easeInOut(duration: 0.3)) {
-            offset.width = liked ? 1000 : -1000
+    // MARK: - UI Components
+    
+    private func stamp(text: String, color: Color, rotation: Double, alignment: Alignment) -> some View {
+        Text(text)
+            .font(.system(size: 42, weight: .black, design: .rounded))
+            .foregroundColor(color)
+            .padding(.horizontal, 15)
+            .padding(.vertical, 8)
+            .background(RoundedRectangle(cornerRadius: 12).stroke(color, lineWidth: 5))
+            .rotationEffect(.degrees(rotation))
+            .padding(25)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: alignment)
+    }
+
+    private func categoryIcon(for category: String) -> some View {
+        let icon: String
+        switch category.lowercased() {
+            case "food": icon = "fork.knife"
+            case "outdoor": icon = "leaf.fill"
+            case "cozy": icon = "house.fill"
+            case "active": icon = "figure.run"
+            case "creative": icon = "paintpalette.fill"
+            default: icon = "sparkles"
         }
-        onSwipe(liked)
+        return Image(systemName: icon).font(.title).foregroundColor(.secondary.opacity(0.5))
+    }
+
+    // MARK: - Logic
+    
+    private func moveAndSwipe(liked: Bool) {
+        guard !isRemoved else { return }
+        
+        // Visual "kick" to show the stamp before it flies away
+        withAnimation(.easeInOut(duration: 0.15)) {
+            offset.width = liked ? 140 : -140
+            offset.height = -15
+        }
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+            swipe(liked: liked)
+        }
+    }
+    
+    private func swipe(liked: Bool) {
+        guard !isRemoved else { return }
+        isRemoved = true
+        
+        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+        
+        withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+            offset.width = liked ? 1000 : -1000
+            offset.height = -60
+        }
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+            onSwipe(liked)
+        }
     }
 }

@@ -5,9 +5,11 @@ struct SwipeDeckView: View {
     @Binding var selectedTab: Int
     @StateObject var viewModel = HomeViewModel()
     
+    // 1. Add this state to track button presses
+    @State private var buttonTrigger: Bool? = nil
+    
     var body: some View {
         ZStack {
-            // 1. MAIN CONTENT LAYER
             VStack {
                 if viewModel.isLoading {
                     VStack(spacing: 20) {
@@ -18,30 +20,33 @@ struct SwipeDeckView: View {
                     }
                 } else if let idea = viewModel.currentIdea {
                     VStack(spacing: 20) {
-                        DateIdeaCard(idea: idea) { liked in
-                            let userId = user.id ?? ""
-                            viewModel.handleSwipe(
-                                userId: userId,
-                                partnerId: user.partnerId,
-                                liked: liked
-                            )
-                        }
-                        .id(viewModel.currentIndex)
+                        // 2. Pass the trigger to the card
+                        DateIdeaCard(
+                            idea: idea,
+                            onSwipe: { liked in
+                                // This now runs AFTER the card finishes flying away
+                                let userId = user.id ?? ""
+                                viewModel.handleSwipe(
+                                    userId: userId,
+                                    partnerId: user.partnerId,
+                                    liked: liked
+                                )
+                                buttonTrigger = nil // Reset for next card
+                            },
+                            forcedSwipe: buttonTrigger // Connect the state
+                        )
+                        .id(idea.id) // Use idea.id instead of index for better animation
                         
                         Text("\(viewModel.ideas.count - viewModel.currentIndex) ideas remaining")
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
-                    .transition(.asymmetric(insertion: .move(edge: .trailing), removal: .move(edge: .leading)))
                     
                     HStack(spacing: 60) {
-                        // Left Button (Dislike)
+                        // NOPE BUTTON
                         Button(action: {
-                            withAnimation(.interpolatingSpring(stiffness: 150, damping: 15)) {
-                                // We simulate a swipe by calling the same handler as the gesture
-                                let userId = user.id ?? ""
-                                viewModel.handleSwipe(userId: userId, partnerId: user.partnerId, liked: false)
-                            }
+                            // 3. Just set the trigger; let the card handle the "kick"
+                            buttonTrigger = false
                         }) {
                             Image(systemName: "xmark")
                                 .font(.system(size: 25, weight: .bold))
@@ -52,12 +57,9 @@ struct SwipeDeckView: View {
                                 .shadow(color: .black.opacity(0.15), radius: 10, y: 5)
                         }
 
-                        // Right Button (Like)
+                        // LIKE BUTTON
                         Button(action: {
-                            withAnimation(.interpolatingSpring(stiffness: 150, damping: 15)) {
-                                let userId = user.id ?? ""
-                                viewModel.handleSwipe(userId: userId, partnerId: user.partnerId, liked: true)
-                            }
+                            buttonTrigger = true
                         }) {
                             Image(systemName: "heart.fill")
                                 .font(.system(size: 30))
@@ -82,13 +84,12 @@ struct SwipeDeckView: View {
                 }
             }
             .padding()
-            .blur(radius: viewModel.showMatchAlert ? 10 : 0) // Subtle blur when match appears
+            .blur(radius: viewModel.showMatchAlert ? 10 : 0)
             .animation(.default, value: viewModel.showMatchAlert)
 
-            // 2. CELEBRATION OVERLAY LAYER
             if viewModel.showMatchAlert, let matchedIdea = viewModel.lastMatchedIdea {
                 MatchOverlayView(idea: matchedIdea, isPresented: $viewModel.showMatchAlert, selectedTab: $selectedTab)
-                    .zIndex(2) // Keeps it above the cards and the "seen everything" view
+                    .zIndex(2)
             }
         }
         .task {
