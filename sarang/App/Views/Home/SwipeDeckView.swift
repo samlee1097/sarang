@@ -19,7 +19,9 @@ struct SwipeDeckView: View {
                     DateIdeaCard(idea: idea) { liked in
                         // Use nil-coalescing since user.id is optional in your struct
                         let userId = user.id ?? ""
-                        viewModel.handleSwipe(userId: userId, liked: liked)
+                        viewModel.handleSwipe(userId: userId,
+                                              partnerId: user.partnerId,
+                                              liked: liked)
                     }
                     .id(viewModel.currentIndex)
                     

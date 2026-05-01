@@ -11,6 +11,7 @@ class HomeViewModel: ObservableObject {
     private let service = DateIdeaService()
     private let swipeService = SwipeService()
     private let db = Firestore.firestore()
+    private let matchService = MatchService()
 
     func loadIdeas(userId: String, preferences: [String]) {
         guard !isLoading else { return }
@@ -24,7 +25,7 @@ class HomeViewModel: ObservableObject {
                 self?.service.fetchIdeas { allIdeas in
                     let freshIdeas = allIdeas.filter { idea in
                         // Use !swipedIds.contains(idea.id ?? "") if id is optional
-                        !swipedIds.contains(idea.id ?? "")
+                        !swipedIds.contains(idea.id)
                     }
                     
                     let ranked = self?.rankIdeas(freshIdeas, preferences: preferences) ?? []
@@ -43,7 +44,7 @@ class HomeViewModel: ObservableObject {
         return ideas[currentIndex]
     }
 
-    func handleSwipe(userId: String, liked: Bool) {
+    func handleSwipe(userId: String, partnerId: String?, liked: Bool) {
         guard let idea = currentIdea else { return }
         let ideaId = idea.id
 
@@ -52,6 +53,15 @@ class HomeViewModel: ObservableObject {
             ideaId: ideaId,
             liked: liked
         )
+        
+        if liked, let pId = partnerId {
+            matchService.checkForMatch(userId: userId, partnerId: pId, ideaId: ideaId) { isMatch in
+                if isMatch {
+                    print("💖 It's a match!")
+                    // TODO: Trigger a UI alert or overlay here
+                }
+            }
+        }
 
         withAnimation(.spring()) {
             currentIndex += 1

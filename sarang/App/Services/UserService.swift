@@ -108,4 +108,47 @@ class UserService {
                 "preferences": categories
             ])
     }
+    
+    /// Links two users together as partners using the partner's email
+        func connectPartner(currentUserId: String, partnerEmail: String, completion: @escaping (Result<Void, UserServiceError>) -> Void) {
+            // 1. Find the partner by email
+            db.collection("users")
+                .whereField("email", isEqualTo: partnerEmail.lowercased())
+                .getDocuments { snapshot, error in
+                    if let error = error {
+                        completion(.failure(.firestore(error.localizedDescription)))
+                        return
+                    }
+                    
+                    guard let document = snapshot?.documents.first else {
+                        completion(.failure(.unknown("No user found with that email.")))
+                        return
+                    }
+                    
+                    let partnerId = document.documentID
+                    
+                    // Prevent linking to yourself
+                    guard partnerId != currentUserId else {
+                        completion(.failure(.unknown("You cannot link to your own email.")))
+                        return
+                    }
+                    
+                    // 2. Prepare the batch update
+                    let batch = self.db.batch()
+                    let currentUserRef = self.db.collection("users").document(currentUserId)
+                    let partnerUserRef = self.db.collection("users").document(partnerId)
+                    
+                    batch.updateData(["partnerId": partnerId], forDocument: currentUserRef)
+                    batch.updateData(["partnerId": currentUserId], forDocument: partnerUserRef)
+                    
+                    // 3. Commit the changes
+                    batch.commit { error in
+                        if let error = error {
+                            completion(.failure(.firestore("Failed to link partner: \(error.localizedDescription)")))
+                        } else {
+                            completion(.success(()))
+                        }
+                    }
+                }
+        }
 }

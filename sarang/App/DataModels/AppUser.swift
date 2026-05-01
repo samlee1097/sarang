@@ -8,6 +8,7 @@ struct AppUser: Codable, Identifiable {
     var display_name: String
     var profile_image_url: String? = "default_profile"
     var onboarding_completed: Bool = false
+    var partnerId: String?
     @FirestoreDate var created_at: Date
     @FirestoreDate var updated_at: Date
 }
