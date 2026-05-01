@@ -24,7 +24,9 @@ struct SwipeDeckView: View {
             }
         }
         .onAppear {
-            viewModel.loadIdeas()
+            if let userId = sessionManager.currentUserId {
+                viewModel.loadIdeas(userId: userId)
+            }
         }
     }
 
