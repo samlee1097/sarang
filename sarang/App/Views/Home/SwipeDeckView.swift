@@ -3,7 +3,11 @@ import SwiftUI
 struct SwipeDeckView: View {
 
     @EnvironmentObject var sessionManager: SessionManager
-    @StateObject private var viewModel = HomeViewModel()
+    @EnvironmentObject var appState: AppState
+
+    var viewModel: HomeViewModel {
+        appState.homeViewModel
+    }
 
     var body: some View {
         VStack {
@@ -19,7 +23,9 @@ struct SwipeDeckView: View {
                 Text("No more ideas 🎉")
             }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .onAppear {
+            viewModel.loadIdeas()
+        }
     }
 
     private func handleSwipe(liked: Bool) {

@@ -3,9 +3,7 @@ import SwiftUI
 struct ProfileView: View {
 
     @EnvironmentObject var sessionManager: SessionManager
-
-    @State private var likesCount: Int = 0
-    @State private var passesCount: Int = 0
+    @StateObject private var viewModel = ProfileViewModel()
 
     var body: some View {
 
@@ -13,7 +11,6 @@ struct ProfileView: View {
 
             VStack(spacing: 25) {
 
-                // MARK: Profile Header
                 VStack(spacing: 10) {
                     Image(systemName: "person.crop.circle.fill")
                         .resizable()
@@ -30,10 +27,9 @@ struct ProfileView: View {
 
                 Divider()
 
-                // MARK: Stats Section
                 HStack(spacing: 40) {
                     VStack {
-                        Text("\(likesCount)")
+                        Text("\(viewModel.likesCount)")
                             .font(.title2)
                             .bold()
                         Text("Liked")
@@ -41,7 +37,7 @@ struct ProfileView: View {
                     }
 
                     VStack {
-                        Text("\(passesCount)")
+                        Text("\(viewModel.passesCount)")
                             .font(.title2)
                             .bold()
                         Text("Passed")
@@ -51,19 +47,11 @@ struct ProfileView: View {
 
                 Divider()
 
-                // MARK: Account Info
-                VStack(spacing: 8) {
-                    Text(user.email)
-                        .foregroundColor(.gray)
-                        .font(.subheadline)
-                }
-
                 Spacer()
 
-                // MARK: Logout
-                Button(action: {
+                Button {
                     sessionManager.signOut()
-                }) {
+                } label: {
                     Text("Log Out")
                         .foregroundColor(.red)
                         .bold()
@@ -74,6 +62,11 @@ struct ProfileView: View {
                 }
             }
             .padding()
+            .onAppear {
+                if let userId = user.id {
+                    viewModel.fetchStats(userId: userId)
+                }
+            }
 
         } else {
             Text("Not logged in")

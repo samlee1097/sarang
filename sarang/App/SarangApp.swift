@@ -5,6 +5,7 @@ import Firebase
 struct SarangApp: App {
 
     @StateObject var sessionManager = SessionManager()
+    @StateObject var appState = AppState()
 
     init() {
         FirebaseApp.configure()
@@ -14,6 +15,7 @@ struct SarangApp: App {
         WindowGroup {
             RootView()
                 .environmentObject(sessionManager)
+                .environmentObject(appState)
         }
     }
 }

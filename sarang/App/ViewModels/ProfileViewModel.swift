@@ -1,79 +1,46 @@
-import SwiftUI
+import Foundation
+import FirebaseFirestore
 
-struct ProfileView: View {
+class ProfileViewModel: ObservableObject {
 
-    @EnvironmentObject var sessionManager: SessionManager
-    @StateObject private var viewModel = ProfileViewModel()
+    @Published var likesCount: Int = 0
+    @Published var passesCount: Int = 0
 
-    var body: some View {
+    private let db = Firestore.firestore()
 
-        if case .authenticated(let user) = sessionManager.authState {
+    func fetchStats(userId: String) {
 
-            VStack(spacing: 25) {
+        Firestore.firestore()
+            .collection("userSwipes")
+            .document(userId)
+            .collection("swipes")
+            .getDocuments { snapshot, error in
 
-                VStack(spacing: 10) {
-                    Image(systemName: "person.crop.circle.fill")
-                        .resizable()
-                        .frame(width: 90, height: 90)
-                        .foregroundColor(.gray)
-
-                    Text(user.display_name)
-                        .font(.title2)
-                        .bold()
-
-                    Text("@\(user.username)")
-                        .foregroundColor(.gray)
+                if let error = error {
+                    print("❌ Error:", error)
+                    return
                 }
 
-                Divider()
+                let docs = snapshot?.documents ?? []
 
-                HStack(spacing: 40) {
-                    VStack {
-                        Text("\(viewModel.likesCount)")
-                            .font(.title2)
-                            .bold()
-                        Text("Liked")
-                            .foregroundColor(.gray)
-                    }
+                var likes = 0
+                var passes = 0
 
-                    VStack {
-                        Text("\(viewModel.passesCount)")
-                            .font(.title2)
-                            .bold()
-                        Text("Passed")
-                            .foregroundColor(.gray)
+                for doc in docs {
+                    let data = doc.data()
+                    let liked = data["liked"] as? Bool ?? false
+
+                    if liked {
+                        likes += 1
+                    } else {
+                        passes += 1
                     }
                 }
 
-                Divider()
-
-                VStack(spacing: 8) {
-                    Text(user.email)
-                        .foregroundColor(.gray)
-                        .font(.subheadline)
-                }
-
-                Spacer()
-
-                Button {
-                    sessionManager.signOut()
-                } label: {
-                    Text("Log Out")
-                        .foregroundColor(.red)
-                        .bold()
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(Color(.systemGray6))
-                        .cornerRadius(12)
+                DispatchQueue.main.async {
+                    self.likesCount = likes
+                    self.passesCount = passes
                 }
             }
-            .padding()
-            .onAppear {
-                viewModel.fetchStats(userId: user.id)
-            }
-
-        } else {
-            Text("Not logged in")
-        }
     }
 }

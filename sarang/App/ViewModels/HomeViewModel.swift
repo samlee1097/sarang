@@ -1,31 +1,29 @@
 import Foundation
 
-final class HomeViewModel: ObservableObject {
+class HomeViewModel: ObservableObject {
 
-    // MARK: - State
     @Published var ideas: [DateIdea] = []
     @Published var currentIndex: Int = 0
 
+    private let service = DateIdeaService()
     private let swipeService = SwipeService()
 
-    init() {
-        loadIdeas()
-    }
-
-    // MARK: - Load (for now: hardcoded)
     func loadIdeas() {
-        ideas = [
-            DateIdea(id: "1", title: "Try a pottery class", description: "Get creative together"),
-            DateIdea(id: "2", title: "Go hiking", description: "Explore a local trail"),
-            DateIdea(id: "3", title: "Cook a new recipe", description: "Try something new at home")
-        ]
+        service.fetchIdeas { [weak self] ideas in
+            DispatchQueue.main.async {
+                self?.ideas = ideas
+                self?.currentIndex = 0
+            }
+        }
     }
 
-    // MARK: - Swipe logic
-    func handleSwipe(userId: String, liked: Bool) {
-        guard currentIndex < ideas.count else { return }
+    var currentIdea: DateIdea? {
+        guard currentIndex < ideas.count else { return nil }
+        return ideas[currentIndex]
+    }
 
-        let idea = ideas[currentIndex]
+    func handleSwipe(userId: String, liked: Bool) {
+        guard let idea = currentIdea else { return }
 
         swipeService.saveSwipe(
             userId: userId,
@@ -34,11 +32,5 @@ final class HomeViewModel: ObservableObject {
         )
 
         currentIndex += 1
-    }
-
-    // MARK: - Helpers
-    var currentIdea: DateIdea? {
-        guard currentIndex < ideas.count else { return nil }
-        return ideas[currentIndex]
     }
 }

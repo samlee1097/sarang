@@ -1,7 +1,9 @@
 import SwiftUI
 
 struct RootView: View {
+
     @EnvironmentObject var sessionManager: SessionManager
+    @EnvironmentObject var appState: AppState
 
     var body: some View {
         Group {
@@ -13,8 +15,9 @@ struct RootView: View {
             case .unauthenticated:
                 LoginView()
 
-            case .authenticated:
-                MainAppView()
+            case .authenticated(let user):
+                MainAppView(user: user)
+                    .environmentObject(appState)
             }
         }
     }
