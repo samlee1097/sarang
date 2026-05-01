@@ -11,13 +11,11 @@ struct HomeView: View {
         case .unauthenticated:
             VStack {
                 Text("Please log in to see date ideas.")
-                Button("Go to Login") {
-                    sessionManager.signOut()
-                }
+                Button("Go to Login") { sessionManager.signOut() }
             }
             
         case .authenticated(let user):
-            SwipeDeckView(user: user)
+            MainAppView(user: user)
         }
     }
 }

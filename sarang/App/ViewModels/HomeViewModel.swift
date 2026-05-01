@@ -6,6 +6,8 @@ class HomeViewModel: ObservableObject {
     @Published var ideas: [DateIdea] = []
     @Published var isLoading: Bool = false
     @Published var currentIndex: Int = 0
+    @Published var showMatchAlert: Bool = false
+    @Published var lastMatchedIdea: DateIdea?
 
     private let service = DateIdeaService()
     private let swipeService = SwipeService()
@@ -57,8 +59,14 @@ class HomeViewModel: ObservableObject {
         if liked, let pId = partnerId {
             matchService.checkForMatch(userId: userId, partnerId: pId, ideaId: ideaId) { isMatch in
                 if isMatch {
-                    print("💖 It's a match!")
-                    // We'll add the popup logic here next
+                    // Switch to main thread to trigger UI
+                    DispatchQueue.main.async {
+                        self.lastMatchedIdea = idea
+                        self.showMatchAlert = true
+                        // Haptic Feedback for the "Win"
+                        let generator = UINotificationFeedbackGenerator()
+                        generator.notificationOccurred(.success)
+                    }
                 }
             }
         }
