@@ -1,6 +1,10 @@
 {
   "colors" : [
     {
+      "color" : {
+        "platform" : "ios",
+        "reference" : "groupTableViewBackgroundColor"
+      },
       "filename" : "document-export-5-31-2025-1_22_29-PM.md",
       "idiom" : "universal"
     }

@@ -11,28 +11,38 @@ struct ProfileView: View {
         if case .authenticated(let user) = sessionManager.authState {
             NavigationView {
                 ScrollView {
-                    VStack(spacing: 24) {
+                    // Increased spacing to 32 for better section definition
+                    VStack(spacing: 32) {
+                        
                         // 1. User Identity
                         headerSection(user: user)
                         
-                        // 2. Partner Connection Status
-                        partnerSection(user: user)
+                        // 2. Active Interaction Area
+                        VStack(spacing: 20) {
+                            partnerSection(user: user)
+                            discoverySection // Promoted for better engagement
+                        }
                         
-                        // 3. Stats Overview
-                        statsSection
+                        // 3. Value Content
+                        savedDatesSection
+                        
+                        // 4. Activity Data (Subtle secondary info)
+                        VStack(spacing: 12) {
+                            Text("Your Activity")
+                                .font(.caption.bold())
+                                .foregroundColor(.secondary)
+                                .textCase(.uppercase)
+                            statsSection
+                        }
                         
                         Divider().padding(.horizontal)
                         
-                        // 4. Content
-                        savedDatesSection
-                        
-                        Spacer(minLength: 40)
-                        
-                        // 5. Destructive Actions
-                        logoutSection
-                        
-                        // 6. Maintenance Tools
-                        developerSection
+                        // 5. Account & Maintenance (Grouped at the bottom)
+                        VStack(spacing: 12) {
+                            logoutSection
+                            developerSection
+                        }
+                        .padding(.bottom, 20)
                     }
                     .padding(.vertical)
                 }
@@ -99,15 +109,42 @@ struct ProfileView: View {
         .padding(.horizontal)
     }
 
+    private var discoverySection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Your Style")
+                .font(.headline)
+                .padding(.horizontal)
+            
+            NavigationLink(destination: PersonalityQuizView()) {
+                HStack {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Discover Your Date Vibe")
+                            .font(.headline)
+                            .foregroundColor(.primary)
+                        Text("Take the 8-question quiz to find your trait.")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .foregroundColor(.secondary)
+                }
+                .padding()
+                .background(Color(.systemGray6))
+                .cornerRadius(12)
+                .padding(.horizontal)
+            }
+        }
+    }
+
     private var statsSection: some View {
         HStack(spacing: 0) {
             StatVStack(value: "\(viewModel.likesCount)", label: "Liked", color: .green)
             
-            Divider().frame(height: 30).padding(.horizontal, 30)
+            Divider().frame(height: 20).padding(.horizontal, 20)
             
             StatVStack(value: "\(viewModel.passesCount)", label: "Passed", color: .red)
         }
-        .padding(.vertical, 10)
     }
 
     private var savedDatesSection: some View {
@@ -164,8 +201,6 @@ struct ProfileView: View {
     }
 }
 
-
-// This should sit at the bottom of the file, outside of ProfileView
 struct StatVStack: View {
     let value: String
     let label: String
@@ -183,6 +218,6 @@ struct StatVStack: View {
                 .foregroundColor(.secondary)
                 .textCase(.uppercase)
         }
-        .frame(maxWidth: .infinity) // Ensures they take up equal space in the HStack
+        .frame(maxWidth: .infinity)
     }
 }
