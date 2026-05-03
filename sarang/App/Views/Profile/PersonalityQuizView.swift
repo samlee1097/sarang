@@ -3,45 +3,45 @@ import SwiftUI
 struct PersonalityQuizView: View {
     @StateObject private var viewModel = PersonalityViewModel()
     @State private var currentAnswers: [Int?] = Array(repeating: nil, count: 8)
+    @State private var showResult = false // NEW: Controls the result pop-up
     
     var body: some View {
         ZStack {
-            // Using a very light background to let content float
             Color(.systemBackground).ignoresSafeArea()
             
             ScrollView {
-                VStack(spacing: 20) { // More vertical space between questions
+                VStack(spacing: 20) {
                     
-                    // Header Section
                     VStack(spacing: 8) {
                         Text("Date Vibe")
-                            .font(.title2.bold())
+                            .font(.title3.bold())
                         
-                        // Squeezed Progress Bar
+                        // FIX 1: Centered Progress Bar
                         Capsule()
                             .fill(Color(.systemGray6))
-                            .frame(width: 2ow 0, height: 6)
+                            .frame(width: 160, height: 6)
                             .overlay(
                                 Capsule()
-                                    .fill(Color.blue.opacity(0.5))
-                                    .frame(width: CGFloat(currentAnswers.compactMap { $0 }.count) * 12.5, height: 6),
+                                    .fill(Color.blue.opacity(0.4))
+                                    // Dynamically scales the fill width based on 8 questions
+                                    .frame(width: CGFloat(currentAnswers.compactMap { $0 }.count) * 20, height: 6),
                                 alignment: .leading
                             )
+                            .frame(maxWidth: .infinity, alignment: .center) // Forces it to the middle
                     }
-                    .padding(.top, 20)
+                    .padding(.top, 15)
 
                     ForEach(0..<8) { index in
-                        VStack(alignment: .center, spacing: 20) {
-                            // Subtle Question Header
+                        VStack(alignment: .center, spacing: 12) {
                             Text("QUESTION \(index + 1)")
-                                .font(.system(size: 10, weight: .bold))
-                                .tracking(1.5)
-                                .foregroundColor(.blue.opacity(0.6))
+                                .font(.system(size: 9, weight: .bold))
+                                .tracking(1.2)
+                                .foregroundColor(.blue.opacity(0.5))
                             
                             Text(PersonalityData.questions[index].text)
-                                .font(.headline)
+                                .font(.subheadline.bold())
                                 .multilineTextAlignment(.center)
-                                .padding(.horizontal, 20)
+                                .padding(.horizontal, 30)
                             
                             TraitSelectionRow(
                                 selectedValue: $currentAnswers[index],
@@ -49,36 +49,52 @@ struct PersonalityQuizView: View {
                                 rightLabel: PersonalityData.questions[index].rightOption
                             )
                         }
-                        .padding(.vertical, 10)
-                        // Removed the background card to eliminate the "blocky" feel
+                        .padding(.vertical, 8)
                         .padding(.horizontal, 20)
                         
                         if index < 7 {
                             Divider()
-                                .padding(.horizontal, 60)
-                                .opacity(0.5)
+                                .frame(width: 40)
+                                .opacity(0.3)
                         }
                     }
                     
-                    // Squeezed Capsule Button
                     Button(action: {
                         viewModel.calculate(answers: currentAnswers)
+                        showResult = true // FIX 3: Triggers the result screen
                     }) {
                         Text("Calculate My Vibe")
-                            .font(.headline)
+                            .font(.subheadline.bold())
                             .foregroundColor(.white)
-                            .frame(width: 240, height: 54) // Fixed width for a "squeezed" look
+                            .frame(width: 220, height: 48)
                             .background(
-                                Capsule() // Capsule is much less blocky than a RoundedRectangle
-                                    .fill(currentAnswers.contains(nil) ? Color.gray.opacity(0.3) : Color.blue.opacity(0.7))
+                                Capsule()
+                                    .fill(currentAnswers.contains(nil) ? Color.gray.opacity(0.2) : Color.blue.opacity(0.7))
                             )
                     }
                     .disabled(currentAnswers.contains(nil))
-                    .padding(.top, 20)
-                    .padding(.bottom, 60)
+                    .padding(.top, 10)
+                    .padding(.bottom, 50)
                 }
             }
         }
         .navigationBarTitleDisplayMode(.inline)
+        // FIX 3: Actually show the result view
+        .sheet(isPresented: $showResult) {
+            QuizResultView(answers: currentAnswers, isPresented: $showResult)
+        }
+        // FIX 2: Save answers when they change
+        .onChange(of: currentAnswers) { _, newAnswers in
+            if let data = try? JSONEncoder().encode(newAnswers) {
+                UserDefaults.standard.set(data, forKey: "savedQuizAnswers")
+            }
+        }
+        // FIX 2: Load answers when opening the screen
+        .onAppear {
+            if let data = UserDefaults.standard.data(forKey: "savedQuizAnswers"),
+               let saved = try? JSONDecoder().decode([Int?].self, from: data) {
+                currentAnswers = saved
+            }
+        }
     }
 }

@@ -15,7 +15,7 @@ struct MainAppView: View {
                 .tag(0)
 
             // Tab 2: Matches
-            MatchesView(user: user)
+            MatchesView()
                 .tabItem {
                     Label("Matches", systemImage: "heart.text.square.fill")
                 }

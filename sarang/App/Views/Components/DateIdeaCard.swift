@@ -41,7 +41,29 @@ struct DateIdeaCard: View {
             RoundedRectangle(cornerRadius: 30, style: .continuous)
                 .fill(swipeColor)
             
-            // 3. Content
+            // 3. 10/10 FEATURE: Compatibility Badge (Top Left)
+            VStack {
+                HStack {
+                    HStack(spacing: 6) {
+                        Image(systemName: "sparkles")
+                        Text("Matches Your Vibe")
+                    }
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundColor(.purple)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                    .background(.ultraThinMaterial)
+                    .clipShape(Capsule())
+                    .shadow(color: .black.opacity(0.05), radius: 5, y: 2)
+                    
+                    Spacer() // Pushes badge to the left
+                }
+                .padding(20)
+                
+                Spacer() // Pushes badge to the top
+            }
+            
+            // 4. Content
             VStack(spacing: 20) {
                 categoryIcon(for: idea.category)
                 
@@ -58,7 +80,7 @@ struct DateIdeaCard: View {
             }
             .padding(30)
             
-            // 4. Interaction Stamps
+            // 5. Interaction Stamps
             stamp(text: "LIKE", color: .mint, rotation: -15, alignment: .topLeading)
                 .opacity(Double(offset.width / stampFadeStart))
             

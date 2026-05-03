@@ -1,6 +1,6 @@
 import Foundation
 import FirebaseFirestore
-import SwiftUI // Required for withAnimation
+import SwiftUI
 
 class HomeViewModel: ObservableObject {
     @Published var ideas: [DateIdea] = []
@@ -21,12 +21,10 @@ class HomeViewModel: ObservableObject {
 
         db.collection("userSwipes").document(userId).collection("swipes")
             .getDocuments { [weak self] snapshot, _ in
-                // 1. Unwrap the ID when building the Set
                 let swipedIds = Set(snapshot?.documents.compactMap { $0.data()["ideaId"] as? String } ?? [])
 
                 self?.service.fetchIdeas { allIdeas in
                     let freshIdeas = allIdeas.filter { idea in
-                        // 2. Use nil-coalescing (?? "") to compare the optional id to the Set
                         !swipedIds.contains(idea.id ?? "")
                     }
                     
@@ -47,25 +45,16 @@ class HomeViewModel: ObservableObject {
     }
 
     func handleSwipe(userId: String, partnerId: String?, liked: Bool) {
-        // 3. Safely unwrap the current idea and its ID
         guard let idea = currentIdea, let ideaId = idea.id else { return }
 
-        swipeService.saveSwipe(
-            userId: userId,
-            ideaId: ideaId,
-            liked: liked
-        )
+        swipeService.saveSwipe(userId: userId, ideaId: ideaId, liked: liked)
         
         if liked, let pId = partnerId {
             matchService.checkForMatch(userId: userId, partnerId: pId, ideaId: ideaId) { isMatch in
                 if isMatch {
-                    // Switch to main thread to trigger UI
                     DispatchQueue.main.async {
                         self.lastMatchedIdea = idea
                         self.showMatchAlert = true
-                        // Haptic Feedback for the "Win"
-                        let generator = UINotificationFeedbackGenerator()
-                        generator.notificationOccurred(.success)
                     }
                 }
             }
@@ -83,7 +72,6 @@ class HomeViewModel: ObservableObject {
     }
 
     private func score(idea: DateIdea, preferences: [String]) -> Int {
-        // Using an empty string fallback if category was optional
         return preferences.contains(idea.category) ? 3 : 1
     }
 }
