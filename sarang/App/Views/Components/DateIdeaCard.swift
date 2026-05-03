@@ -65,13 +65,13 @@ struct DateIdeaCard: View {
             
             // 4. Content
             VStack(spacing: 20) {
-                categoryIcon(for: idea.category)
+                categoryIcon(for: idea.category ?? "General")
                 
-                Text(idea.title)
+                Text(idea.title ?? "New Adventure")
                     .font(.system(.title2, design: .rounded)).bold()
                     .multilineTextAlignment(.center)
                 
-                Text(idea.description)
+                Text(idea.description ?? "Exciting new experiences await!")
                     .font(.system(.subheadline, design: .rounded))
                     .foregroundColor(.secondary)
                     .multilineTextAlignment(.center)

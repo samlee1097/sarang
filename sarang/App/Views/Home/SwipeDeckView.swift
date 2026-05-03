@@ -6,17 +6,35 @@ struct SwipeDeckView: View {
     @StateObject var viewModel = HomeViewModel()
     
     @State private var buttonTrigger: Bool? = nil
+    @State private var isPulsing = false // For the partner presence animation
     
     var body: some View {
         ZStack {
             VStack {
-                if viewModel.isLoading {
-                    VStack(spacing: 20) {
-                        ProgressView()
-                            .scaleEffect(1.5)
-                        Text("Curating your perfect date...")
-                            .foregroundColor(.gray)
+                // 1. 10/10 FEATURE: Partner Presence Indicator (Top of Screen)
+                if user.partnerId != nil {
+                    HStack(spacing: 8) {
+                        Circle()
+                            .fill(Color.green)
+                            .frame(width: 8, height: 8)
+                            .opacity(isPulsing ? 0.3 : 1.0)
+                            .animation(.easeInOut(duration: 1.0).repeatForever(), value: isPulsing)
+                        
+                        Text("Partner is swiping...")
+                            .font(.system(size: 12, weight: .bold))
+                            .foregroundColor(.secondary)
                     }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 8)
+                    .background(Capsule().fill(Color(.systemGray6)))
+                    .padding(.top, 10)
+                    .onAppear { isPulsing = true }
+                }
+                
+                Spacer()
+                
+                if viewModel.isLoading {
+                    ProgressView().scaleEffect(1.5)
                 } else if let idea = viewModel.currentIdea {
                     VStack(spacing: 20) {
                         DateIdeaCard(
@@ -66,23 +84,44 @@ struct SwipeDeckView: View {
                     }
                     .padding(.bottom, 30)
                 } else {
-                    VStack(spacing: 20) {
-                        Text("🎉").font(.system(size: 60))
-                        Text("You've seen everything!").font(.headline)
+                    // 2. 10/10 FEATURE: Premium Empty State
+                    VStack(spacing: 24) {
+                        ZStack {
+                            Circle().fill(Color.blue.opacity(0.1)).frame(width: 100, height: 100)
+                            Image(systemName: "checkmark.seal.fill")
+                                .font(.system(size: 40))
+                                .foregroundColor(.blue)
+                        }
+                        
+                        Text("You're all caught up!")
+                            .font(.title2.bold())
+                        
+                        Text("You've seen all the current local spots. Check your matches to plan a date, or refresh your deck.")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 40)
                         
                         Button("Refresh Feed") {
                             viewModel.loadIdeas(userId: user.id ?? "", preferences: [])
                         }
-                        .buttonStyle(.bordered)
+                        .buttonStyle(.borderedProminent)
+                        .tint(.blue)
+                        .clipShape(Capsule())
+                        .padding(.top, 10)
                     }
+                    .padding(30)
+                    .background(Color(.systemBackground))
+                    .cornerRadius(24)
+                    .shadow(color: .black.opacity(0.04), radius: 15, y: 10)
+                    .padding(.horizontal, 30)
                 }
+                
+                Spacer()
             }
-            .padding()
-            // Blurs the deck perfectly when the match pops up
             .blur(radius: viewModel.showMatchAlert ? 15 : 0)
-            .animation(.easeInOut(duration: 0.3), value: viewModel.showMatchAlert)
-
-            // The Match Overlay Layer
+            
+            // Overlay logic
             if viewModel.showMatchAlert, let matchedIdea = viewModel.lastMatchedIdea {
                 MatchOverlayView(idea: matchedIdea, isPresented: $viewModel.showMatchAlert, selectedTab: $selectedTab)
                     .zIndex(100)

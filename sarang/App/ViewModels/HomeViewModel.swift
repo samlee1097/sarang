@@ -72,6 +72,6 @@ class HomeViewModel: ObservableObject {
     }
 
     private func score(idea: DateIdea, preferences: [String]) -> Int {
-        return preferences.contains(idea.category) ? 3 : 1
+        return preferences.contains(idea.category ?? "") ? 3 : 1
     }
 }

@@ -44,7 +44,7 @@ struct MatchOverlayView: View {
                     }
                     
                     VStack(spacing: 8) {
-                        Text(idea.title)
+                        Text(idea.title ?? "New Adventure")
                             .font(.title2.bold())
                             .multilineTextAlignment(.center)
                             .foregroundColor(.primary)

@@ -1,74 +1,75 @@
 import Foundation
 import FirebaseFirestore
-import Combine
 
+@MainActor
 class MatchesViewModel: ObservableObject {
     @Published var matchedIdeas: [DateIdea] = []
-    @Published var isLoading = false
+    @Published var isLoading: Bool = false
     
     private let db = Firestore.firestore()
+    private var listener: ListenerRegistration?
 
-    func fetchMatches(for userId: String) {
+    func fetchMatches(userId: String) {
         isLoading = true
         
-        // 1. Find all matches where this user is part of the "pair"
-        db.collection("matches")
-            .whereField("pair", arrayContains: userId)
-            .getDocuments { [weak self] snapshot, error in
-                guard let self = self else { return }
-                
-                if let error = error {
-                    print("❌ Error fetching matches: \(error.localizedDescription)")
-                    DispatchQueue.main.async { self.isLoading = false }
-                    return
-                }
-
-                let ideaIds = snapshot?.documents.compactMap { $0.data()["ideaId"] as? String } ?? []
-                
-                if ideaIds.isEmpty {
-                    DispatchQueue.main.async {
+        func fetchMatches(userId: String) {
+            isLoading = true
+            
+            listener = db.collection("matches")
+                .whereField("pair", arrayContains: userId)
+                .addSnapshotListener { [weak self] snapshot, error in
+                    guard let self = self else { return }
+                    
+                    if let error = error {
+                        self.isLoading = false
+                        return
+                    }
+                    
+                    let documents = snapshot?.documents ?? []
+                    let ideaIds = documents.compactMap { $0.data()["ideaId"] as? String }
+                    
+                    if ideaIds.isEmpty {
                         self.matchedIdeas = []
                         self.isLoading = false
+                    } else {
+                        self.loadFullDateIdeas(ids: ideaIds)
                     }
-                    return
                 }
+        }
+    }
 
-                // 2. Fetch the actual DateIdea objects for those IDs
-                self.fetchIdeasDetails(from: ideaIds)
+    private func loadFullDateIdeas(ids: [String]) {
+        Task {
+            for ideaId in ids {
+                do {
+                    let doc = try await db.collection("dateIdeas").document(ideaId).getDocument()
+                    
+                    // 1. RAW DATA CHECK: Let's see what's actually inside the house
+                    if let rawData = doc.data() {
+                        print("🛠️ RAW DATA for [\(ideaId)]: \(rawData)")
+                    }
+
+                    // 2. DECODER CHECK: This is where it's failing
+                    do {
+                        let idea = try doc.data(as: DateIdea.self)
+                        print("✅ Decoded successfully: \(idea.title)")
+                        
+                        await MainActor.run {
+                            self.matchedIdeas.append(idea)
+                            self.isLoading = false
+                        }
+                    } catch {
+                        print("❌ DECODING ERROR: \(error)")
+                    }
+                    
+                } catch {
+                    print("❌ NETWORK ERROR: \(error.localizedDescription)")
+                }
             }
-    }
-
-    private func fetchIdeasDetails(from ids: [String]) {
-        // Firestore limits 'in' queries to 10 items. We safely chunk them here.
-        let chunks = ids.chunked(into: 10)
-        var fetchedIdeas: [DateIdea] = []
-        let group = DispatchGroup()
-
-        for chunk in chunks {
-            group.enter()
-            db.collection("dateIdeas")
-                .whereField(FieldPath.documentID(), in: chunk)
-                .getDocuments { snapshot, _ in
-                    if let docs = snapshot?.documents {
-                        let ideas = docs.compactMap { try? $0.data(as: DateIdea.self) }
-                        fetchedIdeas.append(contentsOf: ideas)
-                    }
-                    group.leave()
-                }
-        }
-
-        group.notify(queue: .main) {
-            self.matchedIdeas = fetchedIdeas
-            self.isLoading = false
         }
     }
-}
 
-// Extension to safely split arrays into chunks of 10 for Firestore
-extension Array {
-    func chunked(into size: Int) -> [[Element]] {
-        stride(from: 0, to: count, by: size).map {
-            Array(self[$0 ..< Swift.min($0 + size, count)])
-        }
+    deinit {
+        listener?.remove()
     }
 }
