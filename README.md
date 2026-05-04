@@ -62,7 +62,7 @@ Ensure the bundle identifier matches your Firebase project configuration.
 
 Build and run (Cmd + R) on an iPhone simulator or physical device.
 
-🔒 Security Rules
+## 🔒 Security Rules
 The project implements strict Firestore security rules to protect user privacy:
 
 Users: Read access is permitted for authenticated users; write access is restricted to the account owner, with the exception of the partnerId field during the link handshake.
@@ -71,7 +71,7 @@ Swipes: Private sub-collections ensure users can only view their own swipes or t
 
 Matches: Only accessible if the user's UID is present in the specific match's pair array.
 
-🗺 Roadmap
+## 🗺 Roadmap
 [x] Phase 1: Foundation - Authentication, Firestore setup, and basic swiping logic.
 
 [x] Phase 2: Compatibility - Exploration Trait quiz and real-time match engine.
@@ -82,7 +82,7 @@ Matches: Only accessible if the user's UID is present in the specific match's pa
 
 [ ] Phase 5: Release - App Store submission and TestFlight beta testing.
 
-⚖️ License
+## ⚖️ License
 Distributed under the MIT License. See LICENSE for more information.
 
 Samuel Lee GitHub | LinkedIn
