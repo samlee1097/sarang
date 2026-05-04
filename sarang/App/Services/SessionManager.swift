@@ -51,6 +51,27 @@ final class SessionManager: ObservableObject {
             print("❌ Sign out error:", error.localizedDescription)
         }
     }
+    
+    func deleteAccount(completion: @escaping (Bool, String?) -> Void) {
+            guard let user = Auth.auth().currentUser else {
+                completion(false, "No active user found.")
+                return
+            }
+            
+            // Note: For a fully prod-ready app, you should also delete the user's Firestore document here
+            // using your UserService before deleting the Auth record.
+            
+            user.delete { [weak self] error in
+                if let error = error {
+                    completion(false, error.localizedDescription)
+                } else {
+                    DispatchQueue.main.async {
+                        self?.authState = .unauthenticated
+                    }
+                    completion(true, nil)
+                }
+            }
+        }
 
     // MARK: Helpers (IMPORTANT for swipe system later)
 

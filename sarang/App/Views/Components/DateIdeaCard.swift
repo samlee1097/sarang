@@ -8,118 +8,125 @@ struct DateIdeaCard: View {
     @State private var offset: CGSize = .zero
     @State private var isRemoved = false
     
-    // UI Sensitivity Constants
     private let screenCutoff: CGFloat = 120
     private let stampFadeStart: CGFloat = 80
 
-    private var swipeColor: Color {
-        let progress = min(abs(offset.width) / 150.0, 1.0)
-        let intensity = 0.05 + (progress * 0.3)
-        
-        if offset.width > 0 {
-            return Color.mint.opacity(intensity)
-        } else if offset.width < 0 {
-            return Color.pink.opacity(intensity * 0.7)
-        } else {
-            return Color.clear
-        }
-    }
-    
     var body: some View {
-        ZStack {
-            // 1. Card Surface
-            RoundedRectangle(cornerRadius: 30, style: .continuous)
-                .fill(
-                    LinearGradient(
-                        colors: [.white, Color(.systemGray6)],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
-                )
+        ZStack(alignment: .top) {
+            // 1. The Card Body
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .fill(Color(.systemBackground)) // Solid white/dark depending on mode
+                .shadow(color: .black.opacity(0.12), radius: 20, y: 10)
             
-            // 2. Swipe Color Glow
-            RoundedRectangle(cornerRadius: 30, style: .continuous)
-                .fill(swipeColor)
-            
-            // 3. 10/10 FEATURE: Compatibility Badge (Top Left)
-            VStack {
-                HStack {
-                    HStack(spacing: 6) {
-                        Image(systemName: "sparkles")
-                        Text("Matches Your Vibe")
+            VStack(spacing: 0) {
+                // 2. The Image Header (AI / Real Photo Area)
+                ZStack {
+                    if let urlString = idea.imageUrl, let url = URL(string: urlString) {
+                        // Load image from URL
+                        AsyncImage(url: url) { phase in
+                            switch phase {
+                            case .empty:
+                                ProgressView()
+                            case .success(let image):
+                                image
+                                    .resizable()
+                                    .scaledToFill()
+                            case .failure:
+                                fallbackGradient()
+                            @unknown default:
+                                EmptyView()
+                            }
+                        }
+                    } else {
+                        // Show this gorgeous gradient if no image exists yet
+                        fallbackGradient()
                     }
-                    .font(.system(size: 11, weight: .bold))
-                    .foregroundColor(.purple)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 8)
-                    .background(.ultraThinMaterial)
-                    .clipShape(Capsule())
-                    .shadow(color: .black.opacity(0.05), radius: 5, y: 2)
-                    
-                    Spacer() // Pushes badge to the left
                 }
-                .padding(20)
+                .frame(height: 260) // Top 60% of card
+                .clipped()
                 
-                Spacer() // Pushes badge to the top
+                // 3. The Details Area
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(idea.displayCategory.uppercased())
+                        .font(.caption.bold())
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
+                        .background(Color.pink.opacity(0.1))
+                        .foregroundColor(.pink)
+                        .clipShape(Capsule())
+                    
+                    Text(idea.displayTitle)
+                        .font(.system(size: 28, weight: .heavy, design: .rounded))
+                        .foregroundColor(.primary)
+                        .lineLimit(2)
+                    
+                    Text(idea.displayDescription)
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                        .lineLimit(3)
+                        .padding(.top, 4)
+                    
+                    Spacer(minLength: 0)
+                }
+                .padding(24)
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
+            .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
             
-            // 4. Content
-            VStack(spacing: 20) {
-                categoryIcon(for: idea.category ?? "General")
-                
-                Text(idea.title ?? "New Adventure")
-                    .font(.system(.title2, design: .rounded)).bold()
-                    .multilineTextAlignment(.center)
-                
-                Text(idea.description ?? "Exciting new experiences await!")
-                    .font(.system(.subheadline, design: .rounded))
-                    .foregroundColor(.secondary)
-                    .multilineTextAlignment(.center)
-                    .lineLimit(3)
-                    .padding(.horizontal)
+            // 4. The Stamps
+            if offset.width > stampFadeStart {
+                stamp(text: "LIKE", color: .green, rotation: -15, alignment: .topLeading)
+            } else if offset.width < -stampFadeStart {
+                stamp(text: "NOPE", color: .red, rotation: 15, alignment: .topTrailing)
             }
-            .padding(30)
-            
-            // 5. Interaction Stamps
-            stamp(text: "LIKE", color: .mint, rotation: -15, alignment: .topLeading)
-                .opacity(Double(offset.width / stampFadeStart))
-            
-            stamp(text: "NOPE", color: .pink, rotation: 15, alignment: .topTrailing)
-                .opacity(Double(-offset.width / stampFadeStart))
         }
-        .frame(width: 320, height: 450)
-        .shadow(color: .black.opacity(0.1), radius: 20, x: 0, y: 10)
-        .offset(offset)
-        .rotationEffect(.degrees(Double(offset.width / 18)))
-        .onChange(of: forcedSwipe) { oldValue, newValue in
-            if let direction = newValue {
-                moveAndSwipe(liked: direction)
-            }
-        }
+        // Size the card appropriately for the screen
+        .frame(height: 500)
+        .padding(.horizontal, 20)
         
-        // Handle physical drag
+        // 5. THE PHYSICS ENGINE
+        .offset(x: offset.width, y: offset.height * 0.4)
+        .rotationEffect(.degrees(Double(offset.width / 40)))
         .gesture(
             DragGesture()
-                .onChanged { value in
-                    offset = value.translation
+                .onChanged { gesture in
+                    guard !isRemoved else { return }
+                    offset = gesture.translation
                 }
-                .onEnded { value in
-                    let velocity = value.predictedEndTranslation.width
-                    
-                    if offset.width > screenCutoff || velocity > 500 {
+                .onEnded { _ in
+                    guard !isRemoved else { return }
+                    if offset.width > screenCutoff {
                         swipe(liked: true)
-                    } else if offset.width < -screenCutoff || velocity < -500 {
+                    } else if offset.width < -screenCutoff {
                         swipe(liked: false)
                     } else {
-                        withAnimation(.spring(response: 0.4, dampingFraction: 0.6)) {
-                            offset = .zero
-                        }
+                        withAnimation(.spring()) { offset = .zero }
                     }
                 }
         )
+        // 6. THE BUTTON LISTENER
+        .onChange(of: forcedSwipe) { oldValue, newValue in
+            if let isLike = newValue {
+                moveAndSwipe(liked: isLike)
+            }
+        }
     }
     
     // MARK: - UI Components
+    
+    // A beautiful fallback if there is no image
+    private func fallbackGradient() -> some View {
+        ZStack {
+            LinearGradient(
+                colors: [.purple.opacity(0.6), .pink.opacity(0.6)],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+            Image(systemName: "sparkles")
+                .font(.system(size: 50))
+                .foregroundColor(.white.opacity(0.5))
+        }
+    }
     
     private func stamp(text: String, color: Color, rotation: Double, alignment: Alignment) -> some View {
         Text(text)
@@ -131,32 +138,17 @@ struct DateIdeaCard: View {
             .rotationEffect(.degrees(rotation))
             .padding(25)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: alignment)
-    }
-
-    private func categoryIcon(for category: String) -> some View {
-        let icon: String
-        switch category.lowercased() {
-            case "food": icon = "fork.knife"
-            case "outdoor": icon = "leaf.fill"
-            case "cozy": icon = "house.fill"
-            case "active": icon = "figure.run"
-            case "creative": icon = "paintpalette.fill"
-            default: icon = "sparkles"
-        }
-        return Image(systemName: icon).font(.title).foregroundColor(.secondary.opacity(0.5))
+            .zIndex(10) // Ensure stamp is over the image
     }
 
     // MARK: - Logic
     
     private func moveAndSwipe(liked: Bool) {
         guard !isRemoved else { return }
-        
-        // Visual "kick" to show the stamp before it flies away
         withAnimation(.easeInOut(duration: 0.15)) {
             offset.width = liked ? 140 : -140
             offset.height = -15
         }
-        
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
             swipe(liked: liked)
         }
@@ -165,14 +157,12 @@ struct DateIdeaCard: View {
     private func swipe(liked: Bool) {
         guard !isRemoved else { return }
         isRemoved = true
-        
         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
         
         withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
             offset.width = liked ? 1000 : -1000
             offset.height = -60
         }
-        
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
             onSwipe(liked)
         }

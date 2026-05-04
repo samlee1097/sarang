@@ -18,8 +18,6 @@ class MatchService {
                 if let data = snapshot?.data(),
                    let liked = data["liked"] as? Bool,
                    liked == true {
-                    
-                    print("✅ Match detected in Firestore!")
                     self.createMatch(userA: userId, userB: partnerId, ideaId: ideaId)
                     completion(true)
                 } else {

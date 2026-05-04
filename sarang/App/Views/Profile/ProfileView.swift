@@ -1,4 +1,5 @@
 import SwiftUI
+import PhotosUI
 
 struct ProfileView: View {
     @EnvironmentObject var sessionManager: SessionManager
@@ -6,6 +7,9 @@ struct ProfileView: View {
     @StateObject private var viewModel = ProfileViewModel()
     
     @State private var isShowingConnectPartner = false
+    @State private var showingDeleteAlert = false
+    @State private var selectedPhotoItem: PhotosPickerItem?
+    @State private var profileImage: Image?
 
     var body: some View {
         if case .authenticated(let user) = sessionManager.authState {
@@ -74,22 +78,52 @@ struct ProfileView: View {
     
     private func headerSection(user: AppUser) -> some View {
         VStack(spacing: 12) {
-            ZStack {
-                Circle()
-                    .fill(Color(.systemGray5))
-                    .frame(width: 100, height: 100)
-                Image(systemName: "person.crop.circle.fill")
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .frame(width: 100, height: 100)
-                    .foregroundColor(.gray.opacity(0.5))
+            // Native iOS Photo Picker
+            PhotosPicker(selection: $selectedPhotoItem, matching: .images, photoLibrary: .shared()) {
+                ZStack {
+                    if let profileImage = profileImage {
+                        profileImage
+                            .resizable()
+                            .scaledToFill()
+                            .frame(width: 100, height: 100)
+                            .clipShape(Circle())
+                            .shadow(color: .black.opacity(0.1), radius: 10, y: 5)
+                    } else {
+                        Circle()
+                            .fill(Color(.systemGray5))
+                            .frame(width: 100, height: 100)
+                        Image(systemName: "camera.fill")
+                            .font(.system(size: 30))
+                            .foregroundColor(.gray.opacity(0.5))
+                    }
+                    
+                    // Edit Badge
+                    Circle()
+                        .fill(Color.pink)
+                        .frame(width: 28, height: 28)
+                        .overlay(Image(systemName: "pencil").font(.system(size: 12, weight: .bold)).foregroundColor(.white))
+                        .offset(x: 35, y: 35)
+                }
             }
-            .shadow(color: .black.opacity(0.05), radius: 10, y: 5)
+            .onChange(of: selectedPhotoItem) { oldValue, newItem in
+                Task {
+                    // Convert the selected photo into a SwiftUI Image
+                    if let data = try? await newItem?.loadTransferable(type: Data.self),
+                       let uiImage = UIImage(data: data) {
+                        
+                        await MainActor.run {
+                            self.profileImage = Image(uiImage: uiImage)
+                        }
+                        
+                        // 🚀 NEXT STEP FOR YOU: Upload `data` to Firebase Storage
+                        // and save the resulting URL to the user's Firestore document.
+                    }
+                }
+            }
             
             VStack(spacing: 4) {
                 Text(user.display_name)
                     .font(.title2.bold())
-                
                 Text("@\(user.username)")
                     .font(.subheadline)
                     .foregroundColor(.secondary)
@@ -213,35 +247,64 @@ struct ProfileView: View {
     }
 
     private var logoutSection: some View {
-        Button(action: { sessionManager.signOut() }) {
-            Text("Log Out")
-                .font(.subheadline.bold())
-                .foregroundColor(.red.opacity(0.8))
-                .padding(.vertical, 14)
-                .frame(maxWidth: .infinity)
-                .background(Color(.systemBackground))
-                .cornerRadius(14)
-                .shadow(color: .black.opacity(0.03), radius: 5, y: 2)
+        VStack(spacing: 12) {
+            Button(action: { sessionManager.signOut() }) {
+                Text("Log Out")
+                    .font(.subheadline.bold())
+                    .foregroundColor(.primary)
+                    .padding(.vertical, 14)
+                    .frame(maxWidth: .infinity)
+                    .background(Color(.systemBackground))
+                    .cornerRadius(14)
+                    .shadow(color: .black.opacity(0.03), radius: 5, y: 2)
+            }
+            
+            Button(action: { showingDeleteAlert = true }) {
+                Text("Delete Account")
+                    .font(.subheadline.bold())
+                    .foregroundColor(.red.opacity(0.8))
+                    .padding(.vertical, 14)
+                    .frame(maxWidth: .infinity)
+                    .background(Color(.systemBackground))
+                    .cornerRadius(14)
+                    .shadow(color: .black.opacity(0.03), radius: 5, y: 2)
+            }
         }
         .padding(.horizontal, 40)
+        .alert("Delete Account", isPresented: $showingDeleteAlert) {
+            Button("Cancel", role: .cancel) { }
+            Button("Delete", role: .destructive) {
+                sessionManager.deleteAccount { success, errorMsg in
+                    if let errorMsg = errorMsg {
+                        print("Failed to delete account: \(errorMsg)")
+                    }
+                }
+            }
+        } message: {
+            Text("Are you sure? This action cannot be undone and you will lose all your saved dates and partner links.")
+        }
     }
     
     private var developerSection: some View {
-        Button(action: {
-            DateIdeaSeeder().clearAndReseed()
-        }) {
-            HStack {
-                Image(systemName: "arrow.clockwise")
-                Text("Refresh Date Deck")
-                    .font(.subheadline.bold())
+        Group {
+            #if DEBUG
+            Button(action: {
+                DateIdeaSeeder().clearAndReseed()
+            }) {
+                HStack {
+                    Image(systemName: "arrow.clockwise")
+                    Text("Refresh Date Deck (Dev Only)")
+                        .font(.subheadline.bold())
+                }
+                .foregroundColor(.secondary)
+                .padding(.vertical, 14)
+                .frame(maxWidth: .infinity)
+                .background(Color(.systemGray6))
+                .cornerRadius(14)
             }
-            .foregroundColor(.secondary)
-            .padding(.vertical, 14)
-            .frame(maxWidth: .infinity)
-            .background(Color(.systemGray6))
-            .cornerRadius(14)
+            .padding(.horizontal, 40)
+            #endif
         }
-        .padding(.horizontal, 40)
     }
 }
 

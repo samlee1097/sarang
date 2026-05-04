@@ -12,59 +12,48 @@ class MatchesViewModel: ObservableObject {
     func fetchMatches(userId: String) {
         isLoading = true
         
-        func fetchMatches(userId: String) {
-            isLoading = true
-            
-            listener = db.collection("matches")
-                .whereField("pair", arrayContains: userId)
-                .addSnapshotListener { [weak self] snapshot, error in
-                    guard let self = self else { return }
-                    
-                    if let error = error {
-                        self.isLoading = false
-                        return
-                    }
-                    
-                    let documents = snapshot?.documents ?? []
-                    let ideaIds = documents.compactMap { $0.data()["ideaId"] as? String }
-                    
-                    if ideaIds.isEmpty {
-                        self.matchedIdeas = []
-                        self.isLoading = false
-                    } else {
-                        self.loadFullDateIdeas(ids: ideaIds)
-                    }
+        // Listen for mutual matches in real-time
+        listener = db.collection("matches")
+            .whereField("pair", arrayContains: userId)
+            .addSnapshotListener { [weak self] snapshot, error in
+                guard let self = self else { return }
+                
+                if error != nil {
+                    self.isLoading = false
+                    return
                 }
-        }
+                
+                let documents = snapshot?.documents ?? []
+                let ideaIds = documents.compactMap { $0.data()["ideaId"] as? String }
+                
+                if ideaIds.isEmpty {
+                    self.matchedIdeas = []
+                    self.isLoading = false
+                } else {
+                    self.loadFullDateIdeas(ids: ideaIds)
+                }
+            }
     }
 
     private func loadFullDateIdeas(ids: [String]) {
         Task {
+            // Use a temporary array so the UI updates all at once and prevents duplicates
+            var fetchedIdeas: [DateIdea] = []
+            
             for ideaId in ids {
                 do {
                     let doc = try await db.collection("dateIdeas").document(ideaId).getDocument()
-                    
-                    // 1. RAW DATA CHECK: Let's see what's actually inside the house
-                    if let rawData = doc.data() {
-                        print("🛠️ RAW DATA for [\(ideaId)]: \(rawData)")
-                    }
-
-                    // 2. DECODER CHECK: This is where it's failing
-                    do {
-                        let idea = try doc.data(as: DateIdea.self)
-                        print("✅ Decoded successfully: \(idea.title)")
-                        
-                        await MainActor.run {
-                            self.matchedIdeas.append(idea)
-                            self.isLoading = false
-                        }
-                    } catch {
-                        print("❌ DECODING ERROR: \(error)")
-                    }
-                    
+                    let idea = try doc.data(as: DateIdea.self)
+                    fetchedIdeas.append(idea)
                 } catch {
-                    print("❌ NETWORK ERROR: \(error.localizedDescription)")
+                    print("Failed to decode match: \(ideaId)")
                 }
+            }
+            
+            await MainActor.run {
+                // Replace the array entirely to stay perfectly synced with Firestore
+                self.matchedIdeas = fetchedIdeas
+                self.isLoading = false
             }
         }
     }

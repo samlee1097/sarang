@@ -55,6 +55,7 @@ class HomeViewModel: ObservableObject {
                     DispatchQueue.main.async {
                         self.lastMatchedIdea = idea
                         self.showMatchAlert = true
+                        self.triggerHaptic(type: .success)
                     }
                 }
             }
@@ -73,5 +74,10 @@ class HomeViewModel: ObservableObject {
 
     private func score(idea: DateIdea, preferences: [String]) -> Int {
         return preferences.contains(idea.category ?? "") ? 3 : 1
+    }
+    
+    private func triggerHaptic(type: UINotificationFeedbackGenerator.FeedbackType) {
+        let generator = UINotificationFeedbackGenerator()
+        generator.notificationOccurred(type)
     }
 }
