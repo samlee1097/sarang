@@ -1,87 +1,88 @@
-# Sarang
+# Sarang (사랑)
 
-## Table of Contents
-* [Description](#description)
-* [Technologies](#technologies)
-* [Setup](#setup)
-* [Design](#design)
-* [Features](#features)
-* [Future Work](#future-work)
+**Sarang** is a high-performance iOS relationship management application built with SwiftUI and Firebase. It addresses the common challenge of "decision fatigue" in modern relationships by utilizing a proprietary compatibility engine and a swipe-based discovery interface to facilitate real-world date scheduling.
 
 ---
 
-<a name="description"/>
+## 📱 Project Overview
 
-## Description
+Unlike traditional date-list apps, Sarang focuses on the **Exploration Trait** methodology. Users complete an integrated assessment to determine their dating archetype, which then informs a real-time compatibility algorithm when paired with a partner.
 
-**Sarang** is a mobile iOS app designed to help busy couples discover personalized date night ideas and experiences based on their shared preferences. The app leverages user interests and AI-powered recommendations to suggest new activities, foods, and hobbies, which can be strategically added to a shared calendar for easy planning.
-
----
-
-<a name="technologies"/>
-
-## Technologies
-
-- Xcode  
-- Swift & SwiftUI  
-- Firebase (Authentication, Firestore)  
-- AI APIs (planned for personalized recommendations)  
+### Core Features
+* **The Discovery Deck:** A custom-engineered card stack utilizing advanced gestures and haptic feedback.
+* **Vibe Compatibility Engine:** A multi-dimensional logic system that compares Energy, Setting, Social, and Discovery preferences.
+* **Secure Handshake:** A request-and-accept partner linking system built on Firestore transaction batches.
+* **Identity Management:** Dynamic avatar generation via the DiceBear API and native photo library integration.
+* **Production Resilience:** Full compliance with App Store guidelines, including account deletion flows and granular security rules.
 
 ---
 
-<a name="setup"/>
+## 🛠 Tech Stack
 
-## Setup
-
-Start by **forking** the project template repository and then cloning the project:
-
-```console
-$ git clone git@github.com:samlee1097/sarang.git
-```
-
-Next, you can install dependencies and configure Firebase with your project credentials.
+| Layer | Technology |
+| :--- | :--- |
+| **Frontend** | SwiftUI, PhotosUI, CoreHaptics |
+| **Backend** | Firebase (Firestore, Authentication, Storage) |
+| **Architecture** | MVVM (Model-View-ViewModel) |
+| **Tools** | Xcode 15+, Git, CocoaPods/SPM |
 
 ---
 
-<a name="design"/>
+## 🏗 Architecture & Data Design
 
-## Design
+The application follows the **MVVM pattern** to ensure a strict separation of concerns, facilitating easier testing and scalability. 
 
-
-### Data Structure
-<img width="1101" alt="image" src="https://github.com/user-attachments/assets/3fb6496c-7355-4279-85f6-c58ac3b53d3d" />
-
-
-
-### Component Hierarchy
+### Data Models
+* `AppUser`: Manages user identity, archetypes, and connection status.
+* `ExplorationTrait`: A type-safe enum system defining the eight core dating archetypes.
+* `DateIdea`: A Firestore-backed schema for experience recommendations.
+* `PartnerRequest`: Handles the temporary state during the partner linking handshake.
 
 ---
 
-<a name="features"/>
+## 🚀 Getting Started
 
-## Features
+### Prerequisites
+* Mac running macOS Sonoma or later.
+* Xcode 15.0+ installed.
+* A Firebase project configured for iOS.
 
-### MVP
-- User account creation and authentication  
-- Personalized interest profiles  
-- Shared calendar for couples  
-- Creating and subscribing to events  
-- AI-driven date night recommendations  
-- Accepting or customizing suggested dates  
+### Installation
+1. Clone the repository:
+   ```bash
+   git clone [https://github.com/yourusername/sarang.git](https://github.com/yourusername/sarang.git)
+   
+2. Open the project in Xcode:
+   ```bash
+   cd sarang
+   open sarang.xcodeproj
+Add your GoogleService-Info.plist to the root directory.
 
-### Stretch Goals
-- Integration with Google Calendar and other calendar services  
-- Advanced AI personalization using user feedback  
-- Location-based activity suggestions  
-- Notifications and reminders for upcoming dates  
+Ensure the bundle identifier matches your Firebase project configuration.
 
----
+Build and run (Cmd + R) on an iPhone simulator or physical device.
 
-<a name="future-work"/>
+## 🔒 Security Rules
+The project implements strict Firestore security rules to protect user privacy:
 
-## Future Work
-- Implement Firebase Authentication with email/password and session management  
-- Define Firestore security rules for data privacy  
-- Build AI recommendation engine and integrate with the app  
-- Sync shared calendars across devices and platforms  
+**Users**: Read access is permitted for authenticated users; write access is restricted to the account owner, with the exception of the partnerId field during the link handshake.
 
+**Swipes**: Private sub-collections ensure users can only view their own swipes or those of their officially linked partner.
+
+**Matches**: Only accessible if the user's UID is present in the specific match's pair array.
+
+## 🗺 Roadmap
+[x] **Phase 1**: Foundation - Authentication, Firestore setup, and basic swiping logic.
+
+[x] **Phase 2**: Compatibility - Exploration Trait quiz and real-time match engine.
+
+[x] **Phase 3**: Connections - Partner request flow and profile personalization.
+
+[ ] **Phase 4**: Optimization - Local data caching and offline persistence.
+
+[ ] **Phase 5**: Release - App Store submission and TestFlight beta testing.
+
+## ⚖️ License
+Distributed under the MIT License. See LICENSE for more information.
+
+Samuel Lee GitHub | LinkedIn
