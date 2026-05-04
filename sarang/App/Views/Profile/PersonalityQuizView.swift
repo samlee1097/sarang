@@ -79,8 +79,8 @@ struct PersonalityQuizView: View {
                     leftLabel: PersonalityData.questions[index].leftOption,
                     rightLabel: PersonalityData.questions[index].rightOption
                 )
-            }
-            .padding(.vertical, 8)
+                .padding(.horizontal, 30)
+            }.padding(.vertical, 8)
             
             if index < 7 {
                 Divider().frame(width: 40).opacity(0.3)
