@@ -3,95 +3,136 @@ import SwiftUI
 struct ConnectPartnerView: View {
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject var sessionManager: SessionManager
+    
     @State private var partnerEmail: String = ""
     @State private var isLoading: Bool = false
     @State private var errorMessage: String?
+    @State private var pendingRequest: PartnerRequest? // Track current user's sent request
     
     private let userService = UserService()
 
     var body: some View {
         NavigationView {
             VStack(spacing: 25) {
-                Image(systemName: "heart.and.arrow.circlepath")
+                // UI changes color/icon based on whether a request is active
+                Image(systemName: pendingRequest == nil ? "heart.and.arrow.circlepath" : "paperplane.fill")
                     .font(.system(size: 80))
-                    .foregroundColor(.pink)
+                    .foregroundColor(pendingRequest == nil ? .pink : .blue)
                     .padding(.top, 40)
                 
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("Connect with your partner")
-                        .font(.title2).bold()
-                    Text("Enter the email your partner used for Sarang.")
-                        .font(.subheadline)
-                        .foregroundColor(.gray)
+                    if let request = pendingRequest {
+                        Text("Request Pending")
+                            .font(.title2).bold()
+                        Text("Waiting for \(request.toEmail) to accept.")
+                            .font(.subheadline)
+                            .foregroundColor(.gray)
+                    } else {
+                        Text("Connect with your partner")
+                            .font(.title2).bold()
+                        Text("Enter the email your partner used for Sarang.")
+                            .font(.subheadline)
+                            .foregroundColor(.gray)
+                    }
                 }
                 .multilineTextAlignment(.center)
                 .padding(.horizontal)
 
-                TextField("Partner's Email", text: $partnerEmail)
-                    .textFieldStyle(.roundedBorder)
-                    .autocapitalization(.none)
-                    .keyboardType(.emailAddress)
-                    .padding(.horizontal)
+                if pendingRequest == nil {
+                    TextField("Partner's Email", text: $partnerEmail)
+                        .textFieldStyle(.roundedBorder)
+                        .autocapitalization(.none)
+                        .keyboardType(.emailAddress)
+                        .padding(.horizontal)
+                }
 
                 if let error = errorMessage {
                     Text(error)
                         .foregroundColor(.red)
                         .font(.caption)
-                        .multilineTextAlignment(.center)
                         .padding(.horizontal)
                 }
 
-                Button(action: connectPartner) {
+                Button(action: {
+                    if pendingRequest != nil {
+                        cancelRequest()
+                    } else {
+                        sendRequest()
+                    }
+                }) {
                     if isLoading {
                         ProgressView()
                     } else {
-                        Text("Connect")
+                        Text(pendingRequest == nil ? "Connect" : "Cancel Request")
                             .fontWeight(.bold)
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity)
                             .padding()
-                            .background(partnerEmail.isEmpty ? Color.gray : Color.pink)
+                            .background(getButtonColor())
                             .cornerRadius(12)
                     }
                 }
-                .disabled(partnerEmail.isEmpty || isLoading)
+                .disabled(shouldDisableButton())
                 .padding(.horizontal)
 
                 Spacer()
             }
             .navigationTitle("Link Partner")
-            .navigationBarTitleDisplayMode(.inline)
+            .onAppear(perform: checkExistingRequest)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Cancel") { dismiss() }
+                    Button("Close") { dismiss() }
                 }
             }
         }
     }
 
-    private func connectPartner() {
-        guard let currentUserId = sessionManager.currentUserId else { return }
-        
+    private func checkExistingRequest() {
+        guard let userId = sessionManager.currentUserId else { return }
+        userService.fetchSentRequest(for: userId) { request in
+            self.pendingRequest = request
+        }
+    }
+
+    private func sendRequest() {
+        guard let user = sessionManager.currentUser else { return }
         isLoading = true
-        errorMessage = nil
-        
-        userService.connectPartner(currentUserId: currentUserId, partnerEmail: partnerEmail) { result in
+        userService.sendPartnerRequest(fromUser: user, toEmail: partnerEmail) { result in
             DispatchQueue.main.async {
                 self.isLoading = false
                 switch result {
                 case .success:
-                    // After a successful link, you might need to re-fetch the user data
-                    // or tell the sessionManager to update.
-                    dismiss()
+                    checkExistingRequest()
                 case .failure(let error):
-                    switch error {
-                    case .firestore(let msg), .unknown(let msg):
-                        self.errorMessage = msg
-                    default:
-                        self.errorMessage = "An unexpected error occurred."
-                    }
+                    // Handle your UserService errors here
+                    self.errorMessage = "Failed to send request."
                 }
             }
         }
+    }
+
+    private func cancelRequest() {
+        guard let userId = sessionManager.currentUserId else { return }
+        isLoading = true
+        userService.cancelPartnerRequest(userId: userId) { result in
+            DispatchQueue.main.async {
+                self.isLoading = false
+                if case .success = result {
+                    self.pendingRequest = nil
+                    self.partnerEmail = ""
+                }
+            }
+        }
+    }
+
+    private func getButtonColor() -> Color {
+        if pendingRequest != nil { return .red }
+        return partnerEmail.isEmpty ? .gray : .pink
+    }
+
+    private func shouldDisableButton() -> Bool {
+        if isLoading { return true }
+        if pendingRequest != nil { return false }
+        return partnerEmail.isEmpty
     }
 }

@@ -17,7 +17,7 @@ struct AppUser: Codable, Identifiable {
     var settingScore: Int?
     var socialScore: Int?
     var discoveryScore: Int?
-    var personalityType: String?
+    var exploration_trait: ExplorationTrait?
 
     @ServerTimestamp var created_at: Date?
     @ServerTimestamp var updated_at: Date?

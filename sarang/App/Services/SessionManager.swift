@@ -12,7 +12,7 @@ final class SessionManager: ObservableObject {
     @Published var authState: AuthState = .loading
 
     private var handle: AuthStateDidChangeListenerHandle?
-    private let userService = UserService()   // ✅ moved here
+    private let userService = UserService()
 
     init() {
         listenToAuthChanges()

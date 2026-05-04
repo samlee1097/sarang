@@ -6,6 +6,8 @@ struct ProfileView: View {
     @StateObject private var viewModel = ProfileViewModel()
     
     @State private var isShowingConnectPartner = false
+    @State private var showingUnlinkAlert = false
+    @State private var showingVibeDetails = false
 
     var body: some View {
         if case .authenticated(let user) = sessionManager.authState {
@@ -74,95 +76,76 @@ struct ProfileView: View {
     }
     
     // MARK: - Internal Sub-Sections
-
     private func partnerSection(user: AppUser) -> some View {
-        VStack {
-            if let partner = viewModel.partnerData {
-                let result = viewModel.calculateMatch(user: user, partner: partner)
-                
-                VStack(spacing: 20) {
-                    HStack {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("Vibe Compatibility")
-                                .font(.system(size: 11, weight: .bold))
-                                .tracking(1.2)
-                                .foregroundColor(.secondary)
-                            
-                            Text("\(result.overallScore)% Match")
-                                .font(.system(size: 28, weight: .black, design: .rounded))
-                                .foregroundColor(.pink)
-                        }
-                        Spacer()
-                        
-                        HStack(spacing: -12) {
-                            traitBadge(trait: user.personalityType, color: .pink)
-                            traitBadge(trait: partner.personalityType, color: .blue)
-                        }
-                    }
+            VStack {
+                if let partner = viewModel.partnerData {
+                    let result = viewModel.calculateMatch(user: user, partner: partner)
                     
-                    VStack(spacing: 12) {
-                        CompatibilityBar(label: "Energy", score: result.energyMatch, color: .orange)
-                        CompatibilityBar(label: "Setting", score: result.settingMatch, color: .green)
-                        CompatibilityBar(label: "Social", score: result.socialMatch, color: .blue)
-                        CompatibilityBar(label: "Discovery", score: result.discoveryMatch, color: .purple)
+                    VStack(spacing: 20) {
+                        HStack {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("Vibe Compatibility").font(.system(size: 11, weight: .bold)).foregroundColor(.secondary)
+                                Text("\(result.overallScore)% Match").font(.system(size: 28, weight: .black, design: .rounded)).foregroundColor(.pink)
+                            }
+                            Spacer()
+                            
+                            Button("Unlink") { showingUnlinkAlert = true }
+                                .font(.caption.bold())
+                                .foregroundColor(.red)
+                        }
+                        
+                        // Match visualizer
+                        HStack(spacing: -12) {
+                            traitBadge(trait: user.exploration_trait, color: .pink)
+                            traitBadge(trait: partner.exploration_trait, color: .blue)
+                        }
+                        
+                        VStack(spacing: 12) {
+                            CompatibilityBar(label: "Energy", score: result.energyMatch, color: .orange)
+                            CompatibilityBar(label: "Setting", score: result.settingMatch, color: .green)
+                            CompatibilityBar(label: "Social", score: result.socialMatch, color: .blue)
+                            CompatibilityBar(label: "Discovery", score: result.discoveryMatch, color: .purple)
+                        }
+                    }
+                    .padding(24).background(Color(.systemBackground)).cornerRadius(24)
+                } else {
+                    // Connect Button for unlinked state
+                    Button(action: { isShowingConnectPartner = true }) {
+                        Text("Connect with Partner").font(.headline.bold()).foregroundColor(.white).padding().frame(maxWidth: .infinity).background(Color.pink).cornerRadius(15)
                     }
                 }
-                .padding(24)
-                .background(Color(.systemBackground))
-                .cornerRadius(24)
-                .shadow(color: .black.opacity(0.04), radius: 15, y: 8)
-                .padding(.horizontal, 30)
-                
-            } else {
-                Button(action: { isShowingConnectPartner = true }) {
-                    HStack {
-                        Image(systemName: "heart.fill")
-                        Text("Connect with Partner")
-                    }
-                    .font(.headline.bold())
-                    .foregroundColor(.white)
-                    .padding(.vertical, 16)
-                    .frame(maxWidth: .infinity)
-                    .background(LinearGradient(colors: [.pink, .purple.opacity(0.8)], startPoint: .topLeading, endPoint: .bottomTrailing))
-                    .clipShape(Capsule())
-                    .shadow(color: .pink.opacity(0.3), radius: 10, y: 5)
-                }
-                .padding(.horizontal, 30)
             }
+            .padding(.horizontal, 30)
         }
-    }
-
+    
     private func discoverySection(user: AppUser) -> some View {
-        NavigationLink(destination: PersonalityQuizView()) {
-            HStack {
-                VStack(alignment: .leading, spacing: 6) {
-                    HStack(spacing: 6) {
-                        Image(systemName: "sparkles").foregroundColor(.purple)
-                        Text(user.personalityType != nil ? "Redo Date Vibe" : "Your Date Vibe").font(.system(size: 11, weight: .bold)).tracking(1).foregroundColor(.purple)
+            NavigationLink(destination: PersonalityQuizView()) {
+                HStack {
+                    VStack(alignment: .leading, spacing: 6) {
+                        HStack(spacing: 6) {
+                            Image(systemName: "sparkles").foregroundColor(.purple)
+                            Text(user.exploration_trait != nil ? "Redo Date Vibe" : "Your Date Vibe").font(.system(size: 11, weight: .bold)).foregroundColor(.purple)
+                        }
+
+                        Text(user.exploration_trait?.displayName ?? "Take the quiz to tune your matches").font(.subheadline).foregroundColor(.primary)
                     }
-                    Text(user.personalityType != nil ? "Currently: \(ExplorationTrait(rawValue: user.personalityType ?? "")?.displayName ?? "Unknown")" : "Take the quiz to tune your matches").font(.subheadline).foregroundColor(.primary)
+                    Spacer()
+                    Text(user.exploration_trait?.icon ?? "").font(.title2)
+                    Image(systemName: "chevron.right").foregroundColor(.secondary.opacity(0.3))
                 }
-                Spacer()
-                Image(systemName: "chevron.right").foregroundColor(.secondary.opacity(0.5))
+                .padding(20).background(Color(.systemBackground)).cornerRadius(20)
+                .shadow(color: .black.opacity(0.04), radius: 10, y: 4).padding(.horizontal, 30)
             }
-            .padding(20).background(Color(.systemBackground)).cornerRadius(20)
-            .shadow(color: .black.opacity(0.04), radius: 10, y: 4).padding(.horizontal, 30)
         }
-    }
 
-    private func traitBadge(trait: String?, color: Color) -> some View {
-        let traitEnum = ExplorationTrait(rawValue: trait ?? "")
-        return Circle()
-            .fill(color.opacity(0.1))
-            .frame(width: 44, height: 44)
-            .overlay(
-                Image(systemName: traitEnum?.icon ?? "person.fill")
-                    .foregroundColor(color)
-                    .font(.system(size: 18))
-            )
-            .background(Circle().stroke(Color(.systemBackground), lineWidth: 3))
+    private func traitBadge(trait: ExplorationTrait?, color: Color) -> some View {
+            Circle()
+                .fill(color.opacity(0.1))
+                .frame(width: 44, height: 44)
+                .overlay(Text(trait?.icon ?? "👤").font(.system(size: 18)))
+                .background(Circle().stroke(Color(.systemBackground), lineWidth: 3))
     }
-
+    
     private var statsSection: some View {
         HStack(spacing: 0) {
             StatVStack(value: "\(viewModel.likesCount)", label: "Liked", color: .mint)
@@ -192,9 +175,32 @@ struct ProfileView: View {
                     .cornerRadius(14)
                 }
                 .padding(.horizontal, 40)
-                #endif // ✅ Cleaned up the extra DEBUG text here
+                #endif
             }
         }
+    
+    private var personalitySection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text("Your Vibe").font(.headline)
+                Spacer()
+                NavigationLink("Retake Quiz", destination: PersonalityQuizView()).font(.caption)
+            }
+            
+            if let trait = sessionManager.currentUser?.exploration_trait {
+                HStack {
+                    Text("\(trait.icon) \(trait.displayName)")
+                    Spacer()
+                    Button(action: { showingVibeDetails = true }) {
+                        Image(systemName: "info.circle").foregroundColor(.pink)
+                    }
+                }
+                .padding()
+                .background(trait.color.opacity(0.15))
+                .cornerRadius(12)
+            }
+        }
+    }
 }
 
 // MARK: - Helper Views

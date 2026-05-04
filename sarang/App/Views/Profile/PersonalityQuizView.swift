@@ -129,7 +129,7 @@ struct PersonalityQuizView: View {
             "settingScore": viewModel.settingScore,
             "socialScore": viewModel.socialScore,
             "discoveryScore": viewModel.discoveryScore,
-            "personalityType": trait.rawValue,
+            "exploration_trait": trait.rawValue,
             "onboarding_completed": true,
             "updated_at": FieldValue.serverTimestamp()
         ], merge: true) { error in

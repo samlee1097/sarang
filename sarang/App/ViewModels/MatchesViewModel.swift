@@ -4,10 +4,12 @@ import FirebaseFirestore
 @MainActor
 class MatchesViewModel: ObservableObject {
     @Published var matchedIdeas: [DateIdea] = []
+    @Published var partnerLikesCount: Int = 0
     @Published var isLoading: Bool = false
     
     private let db = Firestore.firestore()
     private var listener: ListenerRegistration?
+    
 
     func fetchMatches(userId: String) {
         isLoading = true
@@ -57,7 +59,32 @@ class MatchesViewModel: ObservableObject {
             }
         }
     }
-
+    
+    func listenForPartnerActivity(myId: String, partnerId: String) {
+            listener = db.collection("userSwipes")
+                .document(partnerId)
+                .collection("swipes")
+                .whereField("liked", isEqualTo: true)
+                .addSnapshotListener { [weak self] snapshot, _ in
+                    guard let self = self, let docs = snapshot?.documents else { return }
+                    
+                    let partnerLikedIds = docs.map { $0.documentID }
+                    
+                    // Compare with my swipes to find "Pending" matches
+                    self.db.collection("userSwipes").document(myId).collection("swipes")
+                        .getDocuments { mySnapshot, _ in
+                            let mySwipedIds = mySnapshot?.documents.map { $0.documentID } ?? []
+                            
+                            // Items the partner liked that I haven't swiped on yet
+                            let newActivity = partnerLikedIds.filter { !mySwipedIds.contains($0) }
+                            
+                            DispatchQueue.main.async {
+                                self.partnerLikesCount = newActivity.count
+                            }
+                        }
+                }
+        }
+    
     deinit {
         listener?.remove()
     }

@@ -107,45 +107,138 @@ class UserService {
     }
     
     /// Links two users together as partners using the partner's email
-        func connectPartner(currentUserId: String, partnerEmail: String, completion: @escaping (Result<Void, UserServiceError>) -> Void) {
-            // 1. Find the partner by email
-            db.collection("users")
-                .whereField("email", isEqualTo: partnerEmail.lowercased())
-                .getDocuments { snapshot, error in
+    func connectPartner(currentUserId: String, partnerEmail: String, completion: @escaping (Result<Void, UserServiceError>) -> Void) {
+        // 1. Find the partner by email
+        db.collection("users")
+            .whereField("email", isEqualTo: partnerEmail.lowercased())
+            .getDocuments { snapshot, error in
+                if let error = error {
+                    completion(.failure(.firestore(error.localizedDescription)))
+                    return
+                }
+                
+                guard let document = snapshot?.documents.first else {
+                    completion(.failure(.unknown("No user found with that email.")))
+                    return
+                }
+                
+                let partnerId = document.documentID
+                
+                // Prevent linking to yourself
+                guard partnerId != currentUserId else {
+                    completion(.failure(.unknown("You cannot link to your own email.")))
+                    return
+                }
+                
+                // 2. Prepare the batch update
+                let batch = self.db.batch()
+                let currentUserRef = self.db.collection("users").document(currentUserId)
+                let partnerUserRef = self.db.collection("users").document(partnerId)
+                
+                batch.updateData(["partnerId": partnerId], forDocument: currentUserRef)
+                batch.updateData(["partnerId": currentUserId], forDocument: partnerUserRef)
+                
+                // 3. Commit the changes
+                batch.commit { error in
                     if let error = error {
-                        completion(.failure(.firestore(error.localizedDescription)))
-                        return
-                    }
-                    
-                    guard let document = snapshot?.documents.first else {
-                        completion(.failure(.unknown("No user found with that email.")))
-                        return
-                    }
-                    
-                    let partnerId = document.documentID
-                    
-                    // Prevent linking to yourself
-                    guard partnerId != currentUserId else {
-                        completion(.failure(.unknown("You cannot link to your own email.")))
-                        return
-                    }
-                    
-                    // 2. Prepare the batch update
-                    let batch = self.db.batch()
-                    let currentUserRef = self.db.collection("users").document(currentUserId)
-                    let partnerUserRef = self.db.collection("users").document(partnerId)
-                    
-                    batch.updateData(["partnerId": partnerId], forDocument: currentUserRef)
-                    batch.updateData(["partnerId": currentUserId], forDocument: partnerUserRef)
-                    
-                    // 3. Commit the changes
-                    batch.commit { error in
-                        if let error = error {
-                            completion(.failure(.firestore("Failed to link partner: \(error.localizedDescription)")))
-                        } else {
-                            completion(.success(()))
-                        }
+                        completion(.failure(.firestore("Failed to link partner: \(error.localizedDescription)")))
+                    } else {
+                        completion(.success(()))
                     }
                 }
+            }
+    }
+    
+    func sendPartnerRequest(fromUser: AppUser, toEmail: String, completion: @escaping (Result<Void, UserServiceError>) -> Void) {
+        let email = toEmail.lowercased()
+        let currentUserId = fromUser.id ?? ""
+        
+        // 1. Verify the partner user exists
+        db.collection("users").whereField("email", isEqualTo: email).getDocuments { snapshot, error in
+            if let error = error {
+                completion(.failure(.firestore(error.localizedDescription)))
+                return
+            }
+            
+            guard snapshot?.documents.first != nil else {
+                completion(.failure(.unknown("No user found with that email.")))
+                return
+            }
+            
+            // 2. Create the request
+            let request = PartnerRequest(
+                id: currentUserId,
+                fromId: currentUserId,
+                fromEmail: fromUser.email,
+                toEmail: email,
+                status: .pending,
+                timestamp: Date()
+            )
+            
+            do {
+                try self.db.collection("partnerRequests").document(currentUserId).setData(from: request)
+                completion(.success(()))
+            } catch {
+                completion(.failure(.encoding("Failed to create request.")))
+            }
         }
+    }
+
+    /// Fetches any pending request sent by the current user
+    func fetchSentRequest(for userId: String, completion: @escaping (PartnerRequest?) -> Void) {
+        db.collection("partnerRequests").document(userId).getDocument { snapshot, _ in
+            let request = try? snapshot?.data(as: PartnerRequest.self)
+            completion(request)
+        }
+    }
+
+    /// Deletes the pending request document
+    func cancelPartnerRequest(userId: String, completion: @escaping (Result<Void, UserServiceError>) -> Void) {
+        db.collection("partnerRequests").document(userId).delete { error in
+            if let error = error {
+                completion(.failure(.firestore(error.localizedDescription)))
+            } else {
+                completion(.success(()))
+            }
+        }
+    }
+
+    /// 3. The actual linking (called by the receiver)
+    func acceptPartnerRequest(requestId: String, currentUserId: String, partnerId: String, completion: @escaping (Result<Void, UserServiceError>) -> Void) {
+        let batch = db.batch()
+        let currentUserRef = db.collection("users").document(currentUserId)
+        let partnerUserRef = db.collection("users").document(partnerId)
+        
+        batch.updateData(["partnerId": partnerId], forDocument: currentUserRef)
+        batch.updateData(["partnerId": currentUserId], forDocument: partnerUserRef)
+        
+        // Delete the request document after successful link
+        batch.deleteDocument(db.collection("partnerRequests").document(requestId))
+        
+        batch.commit { error in
+            if let error = error {
+                completion(.failure(.firestore(error.localizedDescription)))
+            } else {
+                completion(.success(()))
+            }
+        }
+    }
+    
+    func unlinkPartner(currentUserId: String, partnerId: String, completion: @escaping (Result<Void, UserServiceError>) -> Void) {
+        let batch = db.batch()
+        let currentUserRef = db.collection("users").document(currentUserId)
+        let partnerUserRef = db.collection("users").document(partnerId)
+        
+        // Set partnerId to nil for both
+        batch.updateData(["partnerId": FieldValue.delete()], forDocument: currentUserRef)
+        batch.updateData(["partnerId": FieldValue.delete()], forDocument: partnerUserRef)
+        
+        batch.commit { error in
+            if let error = error {
+                completion(.failure(.firestore(error.localizedDescription)))
+            } else {
+                completion(.success(()))
+            }
+        }
+    }
 }
