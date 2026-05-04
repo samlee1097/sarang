@@ -1,5 +1,4 @@
 import SwiftUI
-import PhotosUI
 
 struct ProfileView: View {
     @EnvironmentObject var sessionManager: SessionManager
@@ -7,34 +6,30 @@ struct ProfileView: View {
     @StateObject private var viewModel = ProfileViewModel()
     
     @State private var isShowingConnectPartner = false
-    @State private var showingDeleteAlert = false
-    @State private var selectedPhotoItem: PhotosPickerItem?
-    @State private var profileImage: Image?
 
     var body: some View {
         if case .authenticated(let user) = sessionManager.authState {
             NavigationView {
                 ZStack {
-                    // Soft background so the white cards float
                     Color(.systemGroupedBackground).ignoresSafeArea()
                     
                     ScrollView {
                         VStack(spacing: 32) {
                             
-                            // 1. User Identity
-                            headerSection(user: user)
+                            // 1. Reusable Header
+                            ProfileHeaderView(user: user)
                                 .padding(.top, 20)
                             
-                            // 2. Active Interaction Area
+                            // 2. Active Area
                             VStack(spacing: 24) {
                                 partnerSection(user: user)
                                 discoverySection
                             }
                             
-                            // 3. Value Content (Saved Dates)
-                            savedDatesSection
+                            // 3. Reusable Carousel
+                            SavedDatesCarousel()
                             
-                            // 4. Activity Data
+                            // 4. Activity Stats
                             VStack(spacing: 16) {
                                 Text("Your Activity")
                                     .font(.system(size: 11, weight: .bold))
@@ -48,10 +43,10 @@ struct ProfileView: View {
                             
                             Divider().padding(.horizontal, 40).opacity(0.5)
                             
-                            // 5. Account & Maintenance
+                            // 5. Reusable Settings
                             VStack(spacing: 16) {
                                 developerSection
-                                logoutSection
+                                ProfileSettingsSection()
                             }
                             .padding(.bottom, 40)
                         }
@@ -74,62 +69,8 @@ struct ProfileView: View {
         }
     }
     
-    // MARK: - Sub-Sections
-    
-    private func headerSection(user: AppUser) -> some View {
-        VStack(spacing: 12) {
-            // Native iOS Photo Picker
-            PhotosPicker(selection: $selectedPhotoItem, matching: .images, photoLibrary: .shared()) {
-                ZStack {
-                    if let profileImage = profileImage {
-                        profileImage
-                            .resizable()
-                            .scaledToFill()
-                            .frame(width: 100, height: 100)
-                            .clipShape(Circle())
-                            .shadow(color: .black.opacity(0.1), radius: 10, y: 5)
-                    } else {
-                        Circle()
-                            .fill(Color(.systemGray5))
-                            .frame(width: 100, height: 100)
-                        Image(systemName: "camera.fill")
-                            .font(.system(size: 30))
-                            .foregroundColor(.gray.opacity(0.5))
-                    }
-                    
-                    // Edit Badge
-                    Circle()
-                        .fill(Color.pink)
-                        .frame(width: 28, height: 28)
-                        .overlay(Image(systemName: "pencil").font(.system(size: 12, weight: .bold)).foregroundColor(.white))
-                        .offset(x: 35, y: 35)
-                }
-            }
-            .onChange(of: selectedPhotoItem) { oldValue, newItem in
-                Task {
-                    // Convert the selected photo into a SwiftUI Image
-                    if let data = try? await newItem?.loadTransferable(type: Data.self),
-                       let uiImage = UIImage(data: data) {
-                        
-                        await MainActor.run {
-                            self.profileImage = Image(uiImage: uiImage)
-                        }
-                        
-                        // 🚀 NEXT STEP FOR YOU: Upload `data` to Firebase Storage
-                        // and save the resulting URL to the user's Firestore document.
-                    }
-                }
-            }
-            
-            VStack(spacing: 4) {
-                Text(user.display_name)
-                    .font(.title2.bold())
-                Text("@\(user.username)")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-            }
-        }
-    }
+    // MARK: - Remaining Internal Sub-Sections
+    // (We kept these here because they rely heavily on the local viewModel)
 
     private func partnerSection(user: AppUser) -> some View {
         VStack {
@@ -143,25 +84,18 @@ struct ProfileView: View {
                     .foregroundColor(.white)
                     .padding(.vertical, 16)
                     .frame(maxWidth: .infinity)
-                    // Premium Gradient Look
-                    .background(
-                        LinearGradient(colors: [.pink, .purple.opacity(0.8)], startPoint: .topLeading, endPoint: .bottomTrailing)
-                    )
+                    .background(LinearGradient(colors: [.pink, .purple.opacity(0.8)], startPoint: .topLeading, endPoint: .bottomTrailing))
                     .clipShape(Capsule())
                     .shadow(color: .pink.opacity(0.3), radius: 10, y: 5)
                 }
-                .padding(.horizontal, 30) // Squeezed sides
+                .padding(.horizontal, 30)
             } else {
                 HStack {
-                    Image(systemName: "checkmark.seal.fill")
-                        .foregroundColor(.green)
-                    Text("Linked with Partner")
-                        .font(.subheadline.bold())
+                    Image(systemName: "checkmark.seal.fill").foregroundColor(.green)
+                    Text("Linked with Partner").font(.subheadline.bold())
                 }
-                .padding(.vertical, 12)
-                .padding(.horizontal, 20)
-                .background(Color.green.opacity(0.1))
-                .clipShape(Capsule())
+                .padding(.vertical, 12).padding(.horizontal, 20)
+                .background(Color.green.opacity(0.1)).clipShape(Capsule())
             }
         }
     }
@@ -171,136 +105,40 @@ struct ProfileView: View {
             HStack {
                 VStack(alignment: .leading, spacing: 6) {
                     HStack(spacing: 6) {
-                        Image(systemName: "sparkles")
-                            .foregroundColor(.purple)
-                        Text("Your Date Vibe")
-                            .font(.system(size: 11, weight: .bold))
-                            .tracking(1)
-                            .foregroundColor(.purple)
+                        Image(systemName: "sparkles").foregroundColor(.purple)
+                        Text("Your Date Vibe").font(.system(size: 11, weight: .bold)).tracking(1).foregroundColor(.purple)
                     }
-                    
-                    Text("Take the quiz to tune your matches")
-                        .font(.subheadline)
-                        .foregroundColor(.primary)
-                        .multilineTextAlignment(.leading)
+                    Text("Take the quiz to tune your matches").font(.subheadline).foregroundColor(.primary)
                 }
                 Spacer()
-                Image(systemName: "chevron.right")
-                    .foregroundColor(.secondary.opacity(0.5))
+                Image(systemName: "chevron.right").foregroundColor(.secondary.opacity(0.5))
             }
-            .padding(20)
-            .background(Color(.systemBackground))
-            .cornerRadius(20)
-            .shadow(color: .black.opacity(0.04), radius: 10, y: 4)
-            .padding(.horizontal, 30)
+            .padding(20).background(Color(.systemBackground)).cornerRadius(20)
+            .shadow(color: .black.opacity(0.04), radius: 10, y: 4).padding(.horizontal, 30)
         }
     }
 
     private var statsSection: some View {
         HStack(spacing: 0) {
             StatVStack(value: "\(viewModel.likesCount)", label: "Liked", color: .mint)
-            
             Divider().frame(height: 30).padding(.horizontal, 30).opacity(0.5)
-            
             StatVStack(value: "\(viewModel.passesCount)", label: "Passed", color: .pink.opacity(0.7))
         }
-        .padding(.vertical, 15)
-        .padding(.horizontal, 40)
-        .background(Color(.systemBackground))
-        .clipShape(Capsule())
+        .padding(.vertical, 15).padding(.horizontal, 40)
+        .background(Color(.systemBackground)).clipShape(Capsule())
         .shadow(color: .black.opacity(0.03), radius: 8, y: 4)
-    }
-
-    private var savedDatesSection: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("Saved Dates")
-                .font(.headline)
-                .padding(.horizontal, 30)
-            
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 16) {
-                    // Safe spacing on the left
-                    Spacer().frame(width: 14)
-                    
-                    ForEach(0..<3) { _ in
-                        VStack(alignment: .leading) {
-                            RoundedRectangle(cornerRadius: 16)
-                                .fill(LinearGradient(colors: [Color(.systemGray6), Color(.systemGray5)], startPoint: .top, endPoint: .bottom))
-                                .frame(width: 140, height: 100)
-                                .overlay(
-                                    Image(systemName: "photo")
-                                        .foregroundColor(.gray.opacity(0.4))
-                                )
-                            Text("Date Title")
-                                .font(.subheadline.bold())
-                                .foregroundColor(.primary)
-                                .padding(.top, 4)
-                                .padding(.leading, 4)
-                        }
-                    }
-                    
-                    // Safe spacing on the right
-                    Spacer().frame(width: 14)
-                }
-            }
-        }
-    }
-
-    private var logoutSection: some View {
-        VStack(spacing: 12) {
-            Button(action: { sessionManager.signOut() }) {
-                Text("Log Out")
-                    .font(.subheadline.bold())
-                    .foregroundColor(.primary)
-                    .padding(.vertical, 14)
-                    .frame(maxWidth: .infinity)
-                    .background(Color(.systemBackground))
-                    .cornerRadius(14)
-                    .shadow(color: .black.opacity(0.03), radius: 5, y: 2)
-            }
-            
-            Button(action: { showingDeleteAlert = true }) {
-                Text("Delete Account")
-                    .font(.subheadline.bold())
-                    .foregroundColor(.red.opacity(0.8))
-                    .padding(.vertical, 14)
-                    .frame(maxWidth: .infinity)
-                    .background(Color(.systemBackground))
-                    .cornerRadius(14)
-                    .shadow(color: .black.opacity(0.03), radius: 5, y: 2)
-            }
-        }
-        .padding(.horizontal, 40)
-        .alert("Delete Account", isPresented: $showingDeleteAlert) {
-            Button("Cancel", role: .cancel) { }
-            Button("Delete", role: .destructive) {
-                sessionManager.deleteAccount { success, errorMsg in
-                    if let errorMsg = errorMsg {
-                        print("Failed to delete account: \(errorMsg)")
-                    }
-                }
-            }
-        } message: {
-            Text("Are you sure? This action cannot be undone and you will lose all your saved dates and partner links.")
-        }
     }
     
     private var developerSection: some View {
         Group {
             #if DEBUG
-            Button(action: {
-                DateIdeaSeeder().clearAndReseed()
-            }) {
+            Button(action: { /* DateIdeaSeeder().clearAndReseed() */ }) {
                 HStack {
                     Image(systemName: "arrow.clockwise")
-                    Text("Refresh Date Deck (Dev Only)")
-                        .font(.subheadline.bold())
+                    Text("Refresh Date Deck (Dev Only)").font(.subheadline.bold())
                 }
-                .foregroundColor(.secondary)
-                .padding(.vertical, 14)
-                .frame(maxWidth: .infinity)
-                .background(Color(.systemGray6))
-                .cornerRadius(14)
+                .foregroundColor(.secondary).padding(.vertical, 14).frame(maxWidth: .infinity)
+                .background(Color(.systemGray6)).cornerRadius(14)
             }
             .padding(.horizontal, 40)
             #endif
@@ -308,23 +146,14 @@ struct ProfileView: View {
     }
 }
 
-// Squeezed Stat Component
 struct StatVStack: View {
     let value: String
     let label: String
     let color: Color
-    
     var body: some View {
         VStack(spacing: 4) {
-            Text(value)
-                .font(.title2.bold())
-                .foregroundColor(color)
-            
-            Text(label)
-                .font(.system(size: 10, weight: .bold))
-                .tracking(1)
-                .foregroundColor(.secondary)
-                .textCase(.uppercase)
+            Text(value).font(.title2.bold()).foregroundColor(color)
+            Text(label).font(.system(size: 10, weight: .bold)).tracking(1).foregroundColor(.secondary).textCase(.uppercase)
         }
         .frame(minWidth: 60)
     }
