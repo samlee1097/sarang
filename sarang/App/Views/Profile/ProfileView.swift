@@ -79,37 +79,47 @@ struct ProfileView: View {
     private func partnerSection(user: AppUser) -> some View {
             VStack {
                 if let partner = viewModel.partnerData {
-                    let result = viewModel.calculateMatch(user: user, partner: partner)
-                    
-                    VStack(spacing: 20) {
-                        HStack {
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text("Vibe Compatibility").font(.system(size: 11, weight: .bold)).foregroundColor(.secondary)
-                                Text("\(result.overallScore)% Match").font(.system(size: 28, weight: .black, design: .rounded)).foregroundColor(.pink)
+                    if user.exploration_trait != nil && partner.exploration_trait != nil {
+                        let result = viewModel.calculateMatch(user: user, partner: partner)
+                        
+                        VStack(spacing: 20) {
+                            HStack {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text("Vibe Compatibility").font(.system(size: 11, weight: .bold)).foregroundColor(.secondary)
+                                    Text("\(result.overallScore)% Match").font(.system(size: 28, weight: .black, design: .rounded)).foregroundColor(.pink)
+                                }
+                                Spacer()
+                                Button("Unlink") { showingUnlinkAlert = true }
+                                    .font(.caption.bold()).foregroundColor(.red)
                             }
-                            Spacer()
                             
-                            Button("Unlink") { showingUnlinkAlert = true }
-                                .font(.caption.bold())
-                                .foregroundColor(.red)
+                            HStack(spacing: -12) {
+                                traitBadge(trait: user.exploration_trait, color: .pink)
+                                traitBadge(trait: partner.exploration_trait, color: .blue)
+                            }
+                            
+                            VStack(spacing: 12) {
+                                CompatibilityBar(label: "Energy", score: result.energyMatch, color: .orange)
+                                CompatibilityBar(label: "Setting", score: result.settingMatch, color: .green)
+                                CompatibilityBar(label: "Social", score: result.socialMatch, color: .blue)
+                                CompatibilityBar(label: "Discovery", score: result.discoveryMatch, color: .purple)
+                            }
                         }
-                        
-                        // Match visualizer
-                        HStack(spacing: -12) {
-                            traitBadge(trait: user.exploration_trait, color: .pink)
-                            traitBadge(trait: partner.exploration_trait, color: .blue)
-                        }
-                        
+                        .padding(24).background(Color(.systemBackground)).cornerRadius(24)
+                    } else {
                         VStack(spacing: 12) {
-                            CompatibilityBar(label: "Energy", score: result.energyMatch, color: .orange)
-                            CompatibilityBar(label: "Setting", score: result.settingMatch, color: .green)
-                            CompatibilityBar(label: "Social", score: result.socialMatch, color: .blue)
-                            CompatibilityBar(label: "Discovery", score: result.discoveryMatch, color: .purple)
+                            HStack {
+                                Image(systemName: "hourglass").foregroundColor(.orange)
+                                Text("Pending Vibe Check").font(.headline)
+                                Spacer()
+                                Button("Unlink") { showingUnlinkAlert = true }.font(.caption).foregroundColor(.red)
+                            }
+                            Text("Once both of you finish the Date Vibe quiz, your compatibility scores will appear here!")
+                                .font(.caption).foregroundColor(.secondary)
                         }
+                        .padding(24).background(Color(.systemBackground)).cornerRadius(24)
                     }
-                    .padding(24).background(Color(.systemBackground)).cornerRadius(24)
                 } else {
-                    // Connect Button for unlinked state
                     Button(action: { isShowingConnectPartner = true }) {
                         Text("Connect with Partner").font(.headline.bold()).foregroundColor(.white).padding().frame(maxWidth: .infinity).background(Color.pink).cornerRadius(15)
                     }
