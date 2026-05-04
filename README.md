@@ -65,22 +65,22 @@ Build and run (Cmd + R) on an iPhone simulator or physical device.
 ## 🔒 Security Rules
 The project implements strict Firestore security rules to protect user privacy:
 
-Users: Read access is permitted for authenticated users; write access is restricted to the account owner, with the exception of the partnerId field during the link handshake.
+**Users**: Read access is permitted for authenticated users; write access is restricted to the account owner, with the exception of the partnerId field during the link handshake.
 
-Swipes: Private sub-collections ensure users can only view their own swipes or those of their officially linked partner.
+**Swipes**: Private sub-collections ensure users can only view their own swipes or those of their officially linked partner.
 
-Matches: Only accessible if the user's UID is present in the specific match's pair array.
+**Matches**: Only accessible if the user's UID is present in the specific match's pair array.
 
 ## 🗺 Roadmap
-[x] Phase 1: Foundation - Authentication, Firestore setup, and basic swiping logic.
+[x] **Phase 1**: Foundation - Authentication, Firestore setup, and basic swiping logic.
 
-[x] Phase 2: Compatibility - Exploration Trait quiz and real-time match engine.
+[x] **Phase 2**: Compatibility - Exploration Trait quiz and real-time match engine.
 
-[x] Phase 3: Connections - Partner request flow and profile personalization.
+[x] **Phase 3**: Connections - Partner request flow and profile personalization.
 
-[ ] Phase 4: Optimization - Local data caching and offline persistence.
+[ ] **Phase 4**: Optimization - Local data caching and offline persistence.
 
-[ ] Phase 5: Release - App Store submission and TestFlight beta testing.
+[ ] **Phase 5**: Release - App Store submission and TestFlight beta testing.
 
 ## ⚖️ License
 Distributed under the MIT License. See LICENSE for more information.
