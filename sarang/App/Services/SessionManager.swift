@@ -42,6 +42,23 @@ final class SessionManager: ObservableObject {
             }
         }
     }
+    
+    func refreshUser() {
+            guard let userId = Auth.auth().currentUser?.uid else { return }
+
+            userService.getUser(userId: userId) { [weak self] result in
+                DispatchQueue.main.async {
+                    switch result {
+                    case .success(let updatedUser):
+                        // This pushes the new Vibe scores to the whole app
+                        self?.authState = .authenticated(updatedUser)
+                        print("✅ SessionManager: Personality scores refreshed!")
+                    case .failure(let error):
+                        print("❌ SessionManager: Failed to refresh user data:", error)
+                    }
+                }
+            }
+        }
 
     func signOut() {
         do {

@@ -81,12 +81,10 @@ struct SignupView: View {
                 let appUser = AppUser(
                     id: fbUser.uid,
                     username: username,
-                    email: email,
                     display_name: displayName,
-                    profile_image_url: "default_profile",
-                    onboarding_completed: false,
-                    created_at: Date(),
-                    updated_at: Date()
+                    email: email,
+                    created_at: nil,
+                    updated_at: nil
                 )
                 
                 UserService().addUser(user: appUser) { result in

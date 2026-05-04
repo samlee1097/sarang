@@ -16,18 +16,18 @@ struct ProfileView: View {
                     ScrollView {
                         VStack(spacing: 32) {
                             
-                            // 1. Reusable Header
+                            // 1. Reusable Header (DiceBear Avatar)
                             ProfileHeaderView(user: user)
                                 .padding(.top, 20)
                             
-                            // 2. Active Area
+                            // 2. Compatibility & Partner Section
                             VStack(spacing: 24) {
                                 partnerSection(user: user)
-                                discoverySection
+                                discoverySection(user: user)
                             }
                             
-                            // 3. Reusable Carousel
-                            SavedDatesCarousel()
+                            // 3. Saved Dates Carousel (Placeholder for now)
+                            // SavedDatesCarousel()
                             
                             // 4. Activity Stats
                             VStack(spacing: 16) {
@@ -43,7 +43,7 @@ struct ProfileView: View {
                             
                             Divider().padding(.horizontal, 40).opacity(0.5)
                             
-                            // 5. Reusable Settings
+                            // 5. Developer & Settings
                             VStack(spacing: 16) {
                                 developerSection
                                 ProfileSettingsSection()
@@ -62,6 +62,10 @@ struct ProfileView: View {
                 if let userId = sessionManager.currentUserId {
                     appState.loadUserData(userId: userId)
                     viewModel.fetchStats(userId: userId)
+                    
+                    if let pId = user.partnerId {
+                        viewModel.fetchPartnerData(partnerId: pId)
+                    }
                 }
             }
         } else {
@@ -69,12 +73,47 @@ struct ProfileView: View {
         }
     }
     
-    // MARK: - Remaining Internal Sub-Sections
-    // (We kept these here because they rely heavily on the local viewModel)
+    // MARK: - Internal Sub-Sections
 
     private func partnerSection(user: AppUser) -> some View {
         VStack {
-            if user.partnerId == nil {
+            if let partner = viewModel.partnerData {
+                let result = viewModel.calculateMatch(user: user, partner: partner)
+                
+                VStack(spacing: 20) {
+                    HStack {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Vibe Compatibility")
+                                .font(.system(size: 11, weight: .bold))
+                                .tracking(1.2)
+                                .foregroundColor(.secondary)
+                            
+                            Text("\(result.overallScore)% Match")
+                                .font(.system(size: 28, weight: .black, design: .rounded))
+                                .foregroundColor(.pink)
+                        }
+                        Spacer()
+                        
+                        HStack(spacing: -12) {
+                            traitBadge(trait: user.personalityType, color: .pink)
+                            traitBadge(trait: partner.personalityType, color: .blue)
+                        }
+                    }
+                    
+                    VStack(spacing: 12) {
+                        CompatibilityBar(label: "Energy", score: result.energyMatch, color: .orange)
+                        CompatibilityBar(label: "Setting", score: result.settingMatch, color: .green)
+                        CompatibilityBar(label: "Social", score: result.socialMatch, color: .blue)
+                        CompatibilityBar(label: "Discovery", score: result.discoveryMatch, color: .purple)
+                    }
+                }
+                .padding(24)
+                .background(Color(.systemBackground))
+                .cornerRadius(24)
+                .shadow(color: .black.opacity(0.04), radius: 15, y: 8)
+                .padding(.horizontal, 30)
+                
+            } else {
                 Button(action: { isShowingConnectPartner = true }) {
                     HStack {
                         Image(systemName: "heart.fill")
@@ -89,26 +128,19 @@ struct ProfileView: View {
                     .shadow(color: .pink.opacity(0.3), radius: 10, y: 5)
                 }
                 .padding(.horizontal, 30)
-            } else {
-                HStack {
-                    Image(systemName: "checkmark.seal.fill").foregroundColor(.green)
-                    Text("Linked with Partner").font(.subheadline.bold())
-                }
-                .padding(.vertical, 12).padding(.horizontal, 20)
-                .background(Color.green.opacity(0.1)).clipShape(Capsule())
             }
         }
     }
 
-    private var discoverySection: some View {
+    private func discoverySection(user: AppUser) -> some View {
         NavigationLink(destination: PersonalityQuizView()) {
             HStack {
                 VStack(alignment: .leading, spacing: 6) {
                     HStack(spacing: 6) {
                         Image(systemName: "sparkles").foregroundColor(.purple)
-                        Text("Your Date Vibe").font(.system(size: 11, weight: .bold)).tracking(1).foregroundColor(.purple)
+                        Text(user.personalityType != nil ? "Redo Date Vibe" : "Your Date Vibe").font(.system(size: 11, weight: .bold)).tracking(1).foregroundColor(.purple)
                     }
-                    Text("Take the quiz to tune your matches").font(.subheadline).foregroundColor(.primary)
+                    Text(user.personalityType != nil ? "Currently: \(ExplorationTrait(rawValue: user.personalityType ?? "")?.displayName ?? "Unknown")" : "Take the quiz to tune your matches").font(.subheadline).foregroundColor(.primary)
                 }
                 Spacer()
                 Image(systemName: "chevron.right").foregroundColor(.secondary.opacity(0.5))
@@ -116,6 +148,19 @@ struct ProfileView: View {
             .padding(20).background(Color(.systemBackground)).cornerRadius(20)
             .shadow(color: .black.opacity(0.04), radius: 10, y: 4).padding(.horizontal, 30)
         }
+    }
+
+    private func traitBadge(trait: String?, color: Color) -> some View {
+        let traitEnum = ExplorationTrait(rawValue: trait ?? "")
+        return Circle()
+            .fill(color.opacity(0.1))
+            .frame(width: 44, height: 44)
+            .overlay(
+                Image(systemName: traitEnum?.icon ?? "person.fill")
+                    .foregroundColor(color)
+                    .font(.system(size: 18))
+            )
+            .background(Circle().stroke(Color(.systemBackground), lineWidth: 3))
     }
 
     private var statsSection: some View {
@@ -130,21 +175,29 @@ struct ProfileView: View {
     }
     
     private var developerSection: some View {
-        Group {
-            #if DEBUG
-            Button(action: { /* DateIdeaSeeder().clearAndReseed() */ }) {
-                HStack {
-                    Image(systemName: "arrow.clockwise")
-                    Text("Refresh Date Deck (Dev Only)").font(.subheadline.bold())
+            Group {
+                #if DEBUG
+                Button(action: {
+                    // ✅ This is the line that actually runs the code!
+                    DateIdeaSeeder().clearAndReseed()
+                }) {
+                    HStack {
+                        Image(systemName: "arrow.clockwise")
+                        Text("Refresh Date Deck (Dev Only)").font(.subheadline.bold())
+                    }
+                    .foregroundColor(.secondary)
+                    .padding(.vertical, 14)
+                    .frame(maxWidth: .infinity)
+                    .background(Color(.systemGray6))
+                    .cornerRadius(14)
                 }
-                .foregroundColor(.secondary).padding(.vertical, 14).frame(maxWidth: .infinity)
-                .background(Color(.systemGray6)).cornerRadius(14)
+                .padding(.horizontal, 40)
+                #endif // ✅ Cleaned up the extra DEBUG text here
             }
-            .padding(.horizontal, 40)
-            #endif
         }
-    }
 }
+
+// MARK: - Helper Views
 
 struct StatVStack: View {
     let value: String
@@ -156,5 +209,28 @@ struct StatVStack: View {
             Text(label).font(.system(size: 10, weight: .bold)).tracking(1).foregroundColor(.secondary).textCase(.uppercase)
         }
         .frame(minWidth: 60)
+    }
+}
+
+struct CompatibilityBar: View {
+    let label: String
+    let score: Double
+    let color: Color
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack {
+                Text(label).font(.system(size: 10, weight: .bold)).foregroundColor(.primary)
+                Spacer()
+                Text("\(Int(score * 100))%").font(.system(size: 10, weight: .medium)).foregroundColor(.secondary)
+            }
+            GeometryReader { geo in
+                ZStack(alignment: .leading) {
+                    Capsule().fill(color.opacity(0.1)).frame(height: 4)
+                    Capsule().fill(color).frame(width: geo.size.width * CGFloat(score), height: 4)
+                }
+            }
+            .frame(height: 4)
+        }
     }
 }

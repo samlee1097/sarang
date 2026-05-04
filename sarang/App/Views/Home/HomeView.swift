@@ -14,8 +14,8 @@ struct HomeView: View {
                 Button("Go to Login") { sessionManager.signOut() }
             }
             
-        case .authenticated(let user):
-            MainAppView(user: user)
+        case .authenticated:
+            MainAppView()
         }
     }
 }

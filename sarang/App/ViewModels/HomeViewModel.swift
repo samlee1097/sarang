@@ -13,9 +13,12 @@ class HomeViewModel: ObservableObject {
     private let swipeService = SwipeService()
     private let db = Firestore.firestore()
     private let matchService = MatchService()
+    
+    // 🛡️ Tracks the exact time of the last successful swipe
+    private var lastSwipeTime: Date = Date.distantPast
 
-    func loadIdeas(userId: String, preferences: [String]) {
-        guard !isLoading else { return }
+    func loadIdeas(userId: String, user: AppUser) {
+        guard !isLoading && !userId.isEmpty else { return }
         
         DispatchQueue.main.async { self.isLoading = true }
 
@@ -28,7 +31,8 @@ class HomeViewModel: ObservableObject {
                         !swipedIds.contains(idea.id ?? "")
                     }
                     
-                    let ranked = self?.rankIdeas(freshIdeas, preferences: preferences) ?? []
+                    // Uses your new Personality Matrix for ranking
+                    let ranked = self?.rankIdeasByVibe(freshIdeas, user: user) ?? []
 
                     DispatchQueue.main.async {
                         self?.ideas = ranked
@@ -45,10 +49,16 @@ class HomeViewModel: ObservableObject {
     }
 
     func handleSwipe(userId: String, partnerId: String?, liked: Bool) {
+        let now = Date()
+        guard now.timeIntervalSince(lastSwipeTime) > 0.2 else { return }
+        lastSwipeTime = now
+
         guard let idea = currentIdea, let ideaId = idea.id else { return }
 
+        // 1. Persist the swipe
         swipeService.saveSwipe(userId: userId, ideaId: ideaId, liked: liked)
         
+        // 2. Check for Match
         if liked, let pId = partnerId {
             matchService.checkForMatch(userId: userId, partnerId: pId, ideaId: ideaId) { isMatch in
                 if isMatch {
@@ -61,19 +71,28 @@ class HomeViewModel: ObservableObject {
             }
         }
 
-        withAnimation(.spring()) {
+        // 3. Move to next card with a controlled spring animation
+        withAnimation(.spring(response: 0.4, dampingFraction: 0.75)) {
             currentIndex += 1
         }
     }
 
-    private func rankIdeas(_ ideas: [DateIdea], preferences: [String]) -> [DateIdea] {
+    // MARK: - Smart Ranking
+
+    private func rankIdeasByVibe(_ ideas: [DateIdea], user: AppUser) -> [DateIdea] {
         return ideas.sorted { a, b in
-            score(idea: a, preferences: preferences) > score(idea: b, preferences: preferences)
+            calculateVibeScore(idea: a, user: user) > calculateVibeScore(idea: b, user: user)
         }
     }
 
-    private func score(idea: DateIdea, preferences: [String]) -> Int {
-        return preferences.contains(idea.category ?? "") ? 3 : 1
+    private func calculateVibeScore(idea: DateIdea, user: AppUser) -> Int {
+        var score = 0
+        // Standard dot product for your 4D Vibe dimensions
+        score += (idea.energy ?? 0) * (user.energyScore ?? 0)
+        score += (idea.setting ?? 0) * (user.settingScore ?? 0)
+        score += (idea.social ?? 0) * (user.socialScore ?? 0)
+        score += (idea.discovery ?? 0) * (user.discoveryScore ?? 0)
+        return score
     }
     
     private func triggerHaptic(type: UINotificationFeedbackGenerator.FeedbackType) {

@@ -2,15 +2,23 @@ import Foundation
 import FirebaseFirestore
 
 struct AppUser: Codable, Identifiable {
-    var id: String?
+    @DocumentID var id: String?
     var username: String
-    var email: String
     var display_name: String
-    var profile_image_url: String? = "default_profile"
-    var onboarding_completed: Bool = false
+    var email: String
     var partnerId: String?
+    
+    // DiceBear Avatar Data
     var avatarStyle: String?
     var avatarSeed: String?
-    @FirestoreDate var created_at: Date
-    @FirestoreDate var updated_at: Date
+    
+    // Personality Dimensions
+    var energyScore: Int?
+    var settingScore: Int?
+    var socialScore: Int?
+    var discoveryScore: Int?
+    var personalityType: String?
+
+    @ServerTimestamp var created_at: Date?
+    @ServerTimestamp var updated_at: Date?
 }

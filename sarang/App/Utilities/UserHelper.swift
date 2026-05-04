@@ -6,12 +6,12 @@ struct UserHelper {
         return AppUser(
             id: authUser.uid,
             username: username,
-            email: authUser.email ?? "",
             display_name: displayName,
-            profile_image_url: "",
-            onboarding_completed: false,
-            created_at: Date(),
-            updated_at: Date()
+            email: authUser.email ?? "",
+            avatarStyle: "micah",
+            avatarSeed: username,
+            created_at: nil,
+            updated_at: nil
         )
     }
 }

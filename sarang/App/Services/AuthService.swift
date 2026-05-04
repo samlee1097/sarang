@@ -36,15 +36,11 @@ class AuthService {
             let changeRequest = fbUser.createProfileChangeRequest()
             changeRequest.displayName = displayName
             changeRequest.commitChanges { _ in
-                let newUser = AppUser(
-                    id: fbUser.uid,
+                
+                let newUser = UserHelper.createAppUser(
+                    from: fbUser,
                     username: username,
-                    email: email,
-                    display_name: displayName,
-                    profile_image_url: "default-profile",
-                    onboarding_completed: false,
-                    created_at: Date(),
-                    updated_at: Date()
+                    displayName: displayName
                 )
 
                 UserService().addUser(user: newUser) { result in

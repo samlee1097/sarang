@@ -50,34 +50,34 @@ class DateIdeaSeeder {
     private func performReseed() {
         let ideas: [[String: Any]] = [
             // 🍜 FOOD
-            ["title": "Try a new cuisine", "description": "Pick a cuisine neither of you has tried before", "category": "food", "tags": ["Spontaneous", "Foodie"]],
-            ["title": "Cook a new recipe together", "description": "Find a recipe online and make it from scratch", "category": "food", "tags": ["Cozy", "Creative"]],
-            ["title": "Dessert crawl", "description": "Visit multiple dessert spots in one night", "category": "food", "tags": ["Spontaneous", "Foodie"]],
-            ["title": "Coffee shop hopping", "description": "Try 2–3 different coffee shops in one outing", "category": "food", "tags": ["Cozy", "Chill"]],
+            ["title": "Try a New Cuisine", "description": "Pick a cuisine neither has tried before.", "category": "food", "energy": 2, "setting": -5, "social": 2, "discovery": 8],
+            ["title": "Coffee Shop Hopping", "description": "Visit 3 local cafes in one afternoon.", "category": "food", "energy": -3, "setting": -8, "social": -2, "discovery": 4],
+            ["title": "Pizza Making Night", "description": "Buy dough and toppings to compete for the best pie.", "category": "food", "energy": 1, "setting": -10, "social": -8, "discovery": 3],
+            ["title": "Blind Wine Tasting", "description": "Cover labels and try to guess the notes.", "category": "food", "energy": -4, "setting": -10, "social": -5, "discovery": 6],
 
             // 🌿 OUTDOOR
-            ["title": "Go on a scenic hike", "description": "Find a nearby trail and explore nature together", "category": "outdoor", "tags": ["Active", "Adventurous"]],
-            ["title": "Sunset picnic", "description": "Pack food and watch the sunset at a nice spot", "category": "outdoor", "tags": ["Cozy", "Romantic"]],
-            ["title": "Walk a new neighborhood", "description": "Explore a part of town you've never been to", "category": "outdoor", "tags": ["Spontaneous", "Chill"]],
-            ["title": "Bike ride adventure", "description": "Ride bikes through a park or city trail", "category": "outdoor", "tags": ["Active", "Adventurous"]],
-
-            // 🛋️ COZY
-            ["title": "Movie night at home", "description": "Pick a theme and watch movies together", "category": "cozy", "tags": ["Cozy", "Chill"]],
-            ["title": "Game night", "description": "Play board games or card games together", "category": "cozy", "tags": ["Cozy", "Active"]],
-            ["title": "Build a blanket fort", "description": "Create a cozy space and hang out inside", "category": "cozy", "tags": ["Cozy", "Creative"]],
-            ["title": "Read together", "description": "Sit together and read your own books or share one", "category": "cozy", "tags": ["Cozy", "Chill"]],
+            ["title": "Scenic Hike", "description": "Find a nearby trail and explore nature.", "category": "outdoor", "energy": 7, "setting": 9, "social": -6, "discovery": 3],
+            ["title": "Sunset Picnic", "description": "Pack a basket for the local park.", "category": "outdoor", "energy": -6, "setting": 10, "social": -8, "discovery": -2],
+            ["title": "Botanical Garden Walk", "description": "Stroll through the seasonal blooms.", "category": "outdoor", "energy": -2, "setting": 9, "social": -3, "discovery": 5],
+            ["title": "Stargazing Drive", "description": "Drive away from city lights with blankets.", "category": "outdoor", "energy": -8, "setting": 10, "social": -10, "discovery": 2],
 
             // 🏃 ACTIVE
-            ["title": "Take a workout class", "description": "Try yoga, spin, or something new together", "category": "active", "tags": ["Active", "Adventurous"]],
-            ["title": "Play a sport together", "description": "Basketball, tennis, or anything competitive", "category": "active", "tags": ["Active", "Adventurous"]],
-            ["title": "Go rock climbing", "description": "Try an indoor climbing gym", "category": "active", "tags": ["Active", "Adventurous"]],
-            ["title": "Go for a run together", "description": "Pick a scenic route and run side by side", "category": "active", "tags": ["Active", "Chill"]],
+            ["title": "Indoor Rock Climbing", "description": "Challenge each other at a climbing gym.", "category": "active", "energy": 10, "setting": -4, "social": 3, "discovery": 6],
+            ["title": "Go for a Run Together", "description": "Hit a scenic trail side-by-side.", "category": "active", "energy": 9, "setting": 8, "social": -7, "discovery": -5],
+            ["title": "Arcade Tournament", "description": "Classic games and high-score battles.", "category": "active", "energy": 5, "setting": -9, "social": 8, "discovery": 2],
+            ["title": "Mini Golf Battle", "description": "Loser buys ice cream afterward.", "category": "active", "energy": 3, "setting": 4, "social": 5, "discovery": -2],
+
+            // 🛋️ COZY
+            ["title": "Blanket Fort Movie Night", "description": "Build a fort and watch childhood favorites.", "category": "cozy", "energy": -9, "setting": -10, "social": -10, "discovery": -6],
+            ["title": "Board Game Marathon", "description": "Dust off the competitive classics.", "category": "cozy", "energy": -2, "setting": -10, "social": -4, "discovery": -3],
+            ["title": "Puzzle and Podcast", "description": "Work on a 500-piece puzzle together.", "category": "cozy", "energy": -8, "setting": -10, "social": -9, "discovery": -4],
+            ["title": "DIY Spa Night", "description": "Face masks and relaxing music at home.", "category": "cozy", "energy": -10, "setting": -10, "social": -10, "discovery": 2],
 
             // 🎨 CREATIVE
-            ["title": "Paint together", "description": "Follow a tutorial or freestyle your own art", "category": "creative", "tags": ["Creative", "Cozy"]],
-            ["title": "Try a pottery class", "description": "Get hands-on and make something together", "category": "creative", "tags": ["Creative", "Adventurous"]],
-            ["title": "DIY project night", "description": "Build or create something from scratch", "category": "creative", "tags": ["Creative", "Active"]],
-            ["title": "Photography walk", "description": "Take photos of interesting things you find", "category": "creative", "tags": ["Creative", "Chill"]]
+            ["title": "Pottery Class", "description": "Get hands-on with some clay.", "category": "creative", "energy": -2, "setting": -7, "social": 4, "discovery": 10],
+            ["title": "Museum Walkthrough", "description": "Explore a local gallery or museum.", "category": "creative", "energy": -4, "setting": -9, "social": -3, "discovery": 9],
+            ["title": "Photo Scavenger Hunt", "description": "Find and snap items on a list around town.", "category": "creative", "energy": 4, "setting": 5, "social": 2, "discovery": 8],
+            ["title": "Attend a Local Gig", "description": "Find a small live music venue.", "category": "creative", "energy": 4, "setting": -6, "social": 9, "discovery": 7]
         ]
         let batch = db.batch()
             

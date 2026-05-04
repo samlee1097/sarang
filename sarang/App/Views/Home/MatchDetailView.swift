@@ -8,51 +8,60 @@ struct MatchDetailView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 0) {
-                // 1. Hero Image Header
+                // 1. Hero Image Header (Dynamic)
                 ZStack(alignment: .topTrailing) {
-                    Rectangle()
-                        .fill(LinearGradient(colors: [.pink.opacity(0.4), .purple.opacity(0.4)], startPoint: .topLeading, endPoint: .bottomTrailing))
-                        .frame(height: 300)
-                        .overlay(
-                            Image(systemName: "sparkles")
-                                .font(.system(size: 80))
-                                .foregroundColor(.white.opacity(0.6))
-                        )
+                    if let urlString = idea.imageUrl, let url = URL(string: urlString) {
+                        AsyncImage(url: url) { image in
+                            image.resizable().scaledToFill()
+                        } placeholder: {
+                            Rectangle().fill(Color(.systemGray5))
+                        }
+                        .frame(height: 350)
+                        .clipped()
+                    } else {
+                        // Fallback Gradient if no image
+                        Rectangle()
+                            .fill(LinearGradient(colors: [.pink.opacity(0.4), .purple.opacity(0.4)], startPoint: .topLeading, endPoint: .bottomTrailing))
+                            .frame(height: 350)
+                            .overlay(
+                                Image(systemName: "sparkles")
+                                    .font(.system(size: 80))
+                                    .foregroundColor(.white.opacity(0.6))
+                            )
+                    }
                     
+                    // Dismiss Button
                     Button(action: { dismiss() }) {
                         Image(systemName: "xmark.circle.fill")
                             .font(.system(size: 32))
                             .foregroundColor(.white)
                             .shadow(radius: 5)
-                            .padding(24)
+                            .padding(EdgeInsets(top: 60, leading: 0, bottom: 0, trailing: 24))
                     }
                 }
                 
                 // 2. The Content
                 VStack(spacing: 24) {
                     VStack(spacing: 12) {
-                        Text((idea.category ?? "General").uppercased())
+                        Text((idea.displayCategory).uppercased())
                             .font(.system(size: 12, weight: .black))
                             .tracking(2.5)
                             .foregroundColor(.pink)
-                        
 
-                        Text(idea.title ?? "New Date Idea")
+                        Text(idea.displayTitle)
                             .font(.system(size: 32, weight: .heavy, design: .rounded))
                             .multilineTextAlignment(.center)
                         
-                        if let location = idea.location {
-                            HStack(spacing: 6) {
-                                Image(systemName: "mappin.and.ellipse")
-                                Text(location)
-                            }
-                            .font(.subheadline.bold())
-                            .foregroundColor(.secondary)
+                        HStack(spacing: 6) {
+                            Image(systemName: "mappin.and.ellipse")
+                            Text(idea.location ?? "New York, NY")
                         }
+                        .font(.subheadline.bold())
+                        .foregroundColor(.secondary)
                     }
                     .padding(.top, 35)
                     
-                    Text(idea.description ?? "No description available for this date.")
+                    Text(idea.displayDescription)
                         .font(.body)
                         .foregroundColor(.primary.opacity(0.8))
                         .multilineTextAlignment(.center)
@@ -93,18 +102,18 @@ struct MatchDetailView: View {
                     .padding(.bottom, 40)
                 }
                 .background(Color(.systemBackground))
-                .cornerRadius(35, corners: [.topLeft, .topRight])
+                .clipShape(RoundedCorner(radius: 35, corners: [.topLeft, .topRight]))
                 .offset(y: -40)
             }
         }
         .ignoresSafeArea(edges: .top)
+        .navigationBarHidden(true) // Hides the default nav bar so your hero image shines
     }
     
     // MARK: - Logic
     
     private func openInMaps() {
-        let query = (idea.location ?? idea.title) ?? "King of Prussia"
-        
+        let query = idea.location ?? idea.displayTitle
         if let formattedQuery = query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
            let url = URL(string: "maps://?q=\(formattedQuery)") {
             UIApplication.shared.open(url)
@@ -112,8 +121,7 @@ struct MatchDetailView: View {
     }
     
     private func shareToMessages() {
-        let text = "Ready for our date? Let's do: \(idea.title ?? "this date idea")!"
-        
+        let text = "Ready for our date? Let's do: \(idea.displayTitle)!"
         if let formattedText = text.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
            let url = URL(string: "sms:&body=\(formattedText)") {
             UIApplication.shared.open(url)
@@ -121,7 +129,8 @@ struct MatchDetailView: View {
     }
 }
 
-// Helper to round specific corners
+// MARK: - Layout Helpers
+
 extension View {
     func cornerRadius(_ radius: CGFloat, corners: UIRectCorner) -> some View {
         clipShape(RoundedCorner(radius: radius, corners: corners))
@@ -131,7 +140,7 @@ extension View {
 struct RoundedCorner: Shape {
     var radius: CGFloat = .infinity
     var corners: UIRectCorner = .allCorners
-    
+
     func path(in rect: CGRect) -> Path {
         let path = UIBezierPath(
             roundedRect: rect,

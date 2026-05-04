@@ -15,8 +15,8 @@ struct RootView: View {
             case .unauthenticated:
                 LoginView()
 
-            case .authenticated(let user):
-                MainAppView(user: user)
+            case .authenticated:
+                MainAppView()
                     .environmentObject(appState)
             }
         }

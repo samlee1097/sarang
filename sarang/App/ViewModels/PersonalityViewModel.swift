@@ -5,10 +5,10 @@ class PersonalityViewModel: ObservableObject {
     @Published var showResult = false
     
     // Dimension scores
-    private var energyScore = 0
-    private var settingScore = 0
-    private var socialScore = 0
-    private var discoveryScore = 0
+    var energyScore = 0
+    var settingScore = 0
+    var socialScore = 0
+    var discoveryScore = 0
 
     func calculate(answers: [Int?]) {
         // Reset scores for new calculation

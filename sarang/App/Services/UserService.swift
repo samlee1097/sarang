@@ -43,20 +43,21 @@ class UserService {
     func getUser(userId: String, completion: @escaping (Result<AppUser, UserServiceError>) -> Void) {
         db.collection("users").document(userId).getDocument { document, error in
             if let error = error {
-                completion(.failure(.firestore("Firestore error getting user: \(error.localizedDescription)")))
+                completion(.failure(.firestore(error.localizedDescription)))
                 return
             }
             
-            guard let document = document, document.exists, let data = document.data() else {
+            guard let document = document, document.exists else {
                 completion(.failure(.unknown("User document does not exist.")))
                 return
             }
             
             do {
-                let user = try self.decodeFromDictionary(AppUser.self, dict: data)
+                let user = try document.data(as: AppUser.self)
                 completion(.success(user))
             } catch {
-                completion(.failure(.decoding("Error decoding user: \(error.localizedDescription)")))
+                print("❌ Decoding Crash: \(error)")
+                completion(.failure(.decoding(error.localizedDescription)))
             }
         }
     }
@@ -86,17 +87,13 @@ class UserService {
 
     // Helpers to convert Codable to Dictionary and back
     private func encodeToDictionary<T: Codable>(_ value: T) throws -> [String: Any] {
-        let jsonData = try JSONEncoder().encode(value)
-        guard let dict = try JSONSerialization.jsonObject(with: jsonData) as? [String: Any] else {
-            throw NSError(domain: "EncodingError", code: -1, userInfo: nil)
-        }
-        return dict
+        let encoder = Firestore.Encoder()
+        return try encoder.encode(value)
     }
     
     private func decodeFromDictionary<T: Codable>(_ type: T.Type, dict: [String: Any]) throws -> T {
-        let jsonData = try JSONSerialization.data(withJSONObject: dict)
-        let object = try JSONDecoder().decode(type, from: jsonData)
-        return object
+        let decoder = Firestore.Decoder()
+        return try decoder.decode(type, from: dict)
     }
     
     func savePreferences(userId: String, categories: [String]) {
