@@ -1,34 +1,33 @@
 import Foundation
 import FirebaseFirestore
 
+@MainActor
 class ProfileViewModel: ObservableObject {
     @Published var likesCount: Int = 0
     @Published var passesCount: Int = 0
     @Published var partnerData: AppUser? = nil
+    @Published var hasPendingRequest: Bool = false
+    
+    @Published var matchInsight: String = ""
 
     private let db = Firestore.firestore()
     private let userService = UserService()
+    private var partnerListener: ListenerRegistration?
 
     init() {}
 
-    // MARK: - Stats Logic (Kept your original logic)
     func fetchStats(userId: String) {
         db.collection("userSwipes")
             .document(userId)
             .collection("swipes")
-            .getDocuments { snapshot, error in
-                if let error = error {
-                    print("❌ Error:", error)
-                    return
-                }
+            .getDocuments { [weak self] snapshot, error in
+                guard let self = self, let docs = snapshot?.documents else { return }
 
-                let docs = snapshot?.documents ?? []
                 var likes = 0
                 var passes = 0
 
                 for doc in docs {
-                    let data = doc.data()
-                    let liked = data["liked"] as? Bool ?? false
+                    let liked = doc.data()["liked"] as? Bool ?? false
                     if liked { likes += 1 } else { passes += 1 }
                 }
 
@@ -39,18 +38,30 @@ class ProfileViewModel: ObservableObject {
             }
     }
 
-    // MARK: - Partner Logic (New)
     func fetchPartnerData(partnerId: String) {
-        db.collection("users").document(partnerId).addSnapshotListener { snapshot, error in
-            guard let document = snapshot else { return }
-            // This pulls the partner's data and scores automatically
-            try? self.partnerData = document.data(as: AppUser.self)
+        // Stop any previous listener before starting a new one
+        partnerListener?.remove()
+        
+        partnerListener = db.collection("users").document(partnerId).addSnapshotListener { [weak self] snapshot, _ in
+            guard let self = self, let document = snapshot else { return }
+            
+            DispatchQueue.main.async {
+                self.partnerData = try? document.data(as: AppUser.self)
+            }
+        }
+    }
+    
+    func checkPendingRequest(userId: String) {
+        userService.fetchSentRequest(for: userId) { [weak self] request in
+            DispatchQueue.main.async {
+                self?.hasPendingRequest = (request != nil)
+            }
         }
     }
 
-    // MARK: - Compatibility Engine (New)
+    // MARK: - Enhanced Compatibility Engine
     func calculateMatch(user: AppUser, partner: AppUser) -> CompatibilityResult {
-        // Compares Energy, Setting, Social, Discovery (Scale of -10 to 10 = 20 total spread)
+        // Similarity logic (Scale of -10 to 10 = 20 total spread)
         func similarity(v1: Int?, v2: Int?) -> Double {
             let val1 = Double(v1 ?? 0)
             let val2 = Double(v2 ?? 0)
@@ -63,30 +74,42 @@ class ProfileViewModel: ObservableObject {
         let so = similarity(v1: user.socialScore, v2: partner.socialScore)
         let d = similarity(v1: user.discoveryScore, v2: partner.discoveryScore)
         
-        let average = (e + s + so + d) / 4.0
+        // Weighting: Give 'Discovery' slightly more weight (40%)
+        // since this is a date discovery app!
+        let weightedAverage = (e * 0.2) + (s * 0.2) + (so * 0.2) + (d * 0.4)
         
         return CompatibilityResult(
-            overallScore: Int(average * 100),
+            overallScore: Int(weightedAverage * 100),
             energyMatch: e,
             settingMatch: s,
             socialMatch: so,
-            discoveryMatch: d
+            discoveryMatch: d,
+            insight: generateInsight(e: e, s: s, so: so, d: d)
         )
+    }
+
+    // Unique "Insight" logic to make the app feel personalized
+    private func generateInsight(e: Double, s: Double, so: Double, d: Double) -> String {
+        if d > 0.8 { return "You're both natural explorers. Every date will feel like a new discovery." }
+        if e > 0.8 { return "High energy! You both prefer active, vibrant date nights over quiet ones." }
+        if s > 0.8 { return "You share the same 'vibe' when it comes to atmosphere and surroundings." }
+        return "Your balance of traits creates a unique dynamic for trying new things."
     }
     
     func unlinkPartner(currentUserId: String, partnerId: String) {
-            userService.unlinkPartner(currentUserId: currentUserId, partnerId: partnerId) { [weak self] result in
-                DispatchQueue.main.async {
-                    switch result {
-                    case .success():
-                        // Instantly clear the partner data from the UI on success
-                        self?.partnerData = nil
-                    case .failure(let error):
-                        print("❌ Failed to unlink:", error)
-                    }
+        userService.unlinkPartner(currentUserId: currentUserId, partnerId: partnerId) { [weak self] result in
+            DispatchQueue.main.async {
+                if case .success = result {
+                    self?.partnerData = nil
+                    self?.partnerListener?.remove() // Clean up listener on unlink
                 }
             }
         }
+    }
+    
+    deinit {
+        partnerListener?.remove()
+    }
 }
 
 struct CompatibilityResult {
@@ -95,4 +118,5 @@ struct CompatibilityResult {
     let settingMatch: Double
     let socialMatch: Double
     let discoveryMatch: Double
+    let insight: String
 }

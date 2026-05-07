@@ -37,6 +37,7 @@ struct MatchThumbnailCard: View {
                     .font(.system(size: 15, weight: .bold))
                     .foregroundColor(.primary)
                     .lineLimit(2)
+                    .frame(height: 40, alignment: .topLeading)
             }
             .padding(12)
             .frame(maxWidth: .infinity, alignment: .leading)

@@ -8,14 +8,16 @@ class MatchesViewModel: ObservableObject {
     @Published var isLoading: Bool = false
     
     private let db = Firestore.firestore()
-    private var listener: ListenerRegistration?
     
-
+    // 1. SPLIT INTO TWO LISTENERS
+    private var matchesListener: ListenerRegistration?
+    private var activityListener: ListenerRegistration?
+    
     func fetchMatches(userId: String) {
         isLoading = true
         
-        // Listen for mutual matches in real-time
-        listener = db.collection("matches")
+        // 2. USE THE MATCHES LISTENER
+        matchesListener = db.collection("matches")
             .whereField("pair", arrayContains: userId)
             .addSnapshotListener { [weak self] snapshot, error in
                 guard let self = self else { return }
@@ -39,7 +41,6 @@ class MatchesViewModel: ObservableObject {
 
     private func loadFullDateIdeas(ids: [String]) {
         Task {
-            // Use a temporary array so the UI updates all at once and prevents duplicates
             var fetchedIdeas: [DateIdea] = []
             
             for ideaId in ids {
@@ -53,7 +54,6 @@ class MatchesViewModel: ObservableObject {
             }
             
             await MainActor.run {
-                // Replace the array entirely to stay perfectly synced with Firestore
                 self.matchedIdeas = fetchedIdeas
                 self.isLoading = false
             }
@@ -61,7 +61,8 @@ class MatchesViewModel: ObservableObject {
     }
     
     func listenForPartnerActivity(myId: String, partnerId: String) {
-            listener = db.collection("userSwipes")
+            // 3. USE THE ACTIVITY LISTENER
+            activityListener = db.collection("userSwipes")
                 .document(partnerId)
                 .collection("swipes")
                 .whereField("liked", isEqualTo: true)
@@ -70,12 +71,11 @@ class MatchesViewModel: ObservableObject {
                     
                     let partnerLikedIds = docs.map { $0.documentID }
                     
-                    // Compare with my swipes to find "Pending" matches
                     self.db.collection("userSwipes").document(myId).collection("swipes")
-                        .getDocuments { mySnapshot, _ in
+                        .getDocuments { [weak self] mySnapshot, _ in  // <-- Added [weak self] here
+                            guard let self = self else { return }
                             let mySwipedIds = mySnapshot?.documents.map { $0.documentID } ?? []
                             
-                            // Items the partner liked that I haven't swiped on yet
                             let newActivity = partnerLikedIds.filter { !mySwipedIds.contains($0) }
                             
                             DispatchQueue.main.async {
@@ -86,6 +86,8 @@ class MatchesViewModel: ObservableObject {
         }
     
     deinit {
-        listener?.remove()
+        // 4. CLEAN UP BOTH LISTENERS
+        matchesListener?.remove()
+        activityListener?.remove()
     }
 }

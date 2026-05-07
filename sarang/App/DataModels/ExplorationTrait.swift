@@ -1,4 +1,4 @@
-import SwiftUI // ✅ Required for Color
+import SwiftUI
 
 enum ExplorationTrait: String, CaseIterable, Codable {
     case urbanExplorer, natureNomad, cozyCurator, adrenalineArchitect
@@ -17,19 +17,6 @@ enum ExplorationTrait: String, CaseIterable, Codable {
         }
     }
 
-    var description: String {
-        switch self {
-        case .urbanExplorer: return "You love the energy of the city, finding hidden gems in concrete jungles, and vibrant nightlife."
-        case .natureNomad: return "You find peace in the outdoors, whether it's a quiet hike or a sunset at the beach."
-        case .cozyCurator: return "Your ideal date involves comfort, intimate conversations, and a warm atmosphere."
-        case .adrenalineArchitect: return "You live for excitement and love dates that get your heart racing."
-        case .culinaryCritic: return "Food is your love language. You enjoy exploring new flavors and dining experiences."
-        case .knowledgeKnight: return "You enjoy stimulating dates like museums, bookstores, or deep late-night talks."
-        case .creativeSoul: return "You love making things, whether it's art, music, or DIY projects together."
-        case .playfulPro: return "You're a kid at heart and love games, competition, and lighthearted fun."
-        }
-    }
-
     var icon: String {
         switch self {
         case .urbanExplorer: return "🏙️"
@@ -43,16 +30,41 @@ enum ExplorationTrait: String, CaseIterable, Codable {
         }
     }
 
+    var description: String {
+        switch self {
+        case .urbanExplorer: return "You thrive in the electric hum of the city, discovering hidden speakeasies and midnight street food."
+        case .natureNomad: return "Your soul rests where the WiFi doesn't reach, connecting through quiet trails and fresh air."
+        case .cozyCurator: return "You are the architect of intimacy, preferring warm mugs and conversations that stretch deep into the night."
+        case .adrenalineArchitect: return "You view romance as a shared adventure, where mutual adrenaline reveals who people truly are."
+        case .culinaryCritic: return "To you, a shared meal is a shared philosophy, using taste and ambiance as a backdrop for connection."
+        case .knowledgeKnight: return "You are seduced by curiosity, craving partners who can volley ideas back and forth."
+        case .creativeSoul: return "You see the world as a canvas, connecting best when wandering through galleries or getting your hands dirty."
+        case .playfulPro: return "You refuse to take dating too seriously, connecting best through laughter and friendly competition."
+        }
+    }
+
+    // Modernized palette
     var color: Color {
         switch self {
-        case .urbanExplorer: return .blue
-        case .natureNomad: return .green
-        case .cozyCurator: return .orange
-        case .adrenalineArchitect: return .red
-        case .culinaryCritic: return .purple
-        case .knowledgeKnight: return .indigo
-        case .creativeSoul: return .pink
-        case .playfulPro: return .yellow
+        case .urbanExplorer: return Color(red: 0.33, green: 0.63, blue: 0.95)
+        case .natureNomad: return Color(red: 0.27, green: 0.73, blue: 0.62)
+        case .cozyCurator: return Color(red: 0.96, green: 0.62, blue: 0.44)
+        case .adrenalineArchitect: return Color(red: 0.94, green: 0.36, blue: 0.42)
+        case .culinaryCritic: return Color(red: 0.65, green: 0.53, blue: 0.92)
+        case .knowledgeKnight: return Color(red: 0.44, green: 0.50, blue: 0.88)
+        case .creativeSoul: return Color(red: 0.91, green: 0.42, blue: 0.66)
+        case .playfulPro: return Color(red: 1.00, green: 0.77, blue: 0.34)
         }
+    }
+
+    var gradient: LinearGradient {
+        LinearGradient(
+            stops: [
+                .init(color: color.opacity(0.15), location: 0),
+                .init(color: color.opacity(0.02), location: 1)
+            ],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
     }
 }
