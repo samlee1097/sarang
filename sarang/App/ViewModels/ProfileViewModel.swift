@@ -7,6 +7,7 @@ class ProfileViewModel: ObservableObject {
     @Published var partnerData: AppUser? = nil
 
     private let db = Firestore.firestore()
+    private let userService = UserService()
 
     init() {}
 
@@ -72,6 +73,20 @@ class ProfileViewModel: ObservableObject {
             discoveryMatch: d
         )
     }
+    
+    func unlinkPartner(currentUserId: String, partnerId: String) {
+            userService.unlinkPartner(currentUserId: currentUserId, partnerId: partnerId) { [weak self] result in
+                DispatchQueue.main.async {
+                    switch result {
+                    case .success():
+                        // Instantly clear the partner data from the UI on success
+                        self?.partnerData = nil
+                    case .failure(let error):
+                        print("❌ Failed to unlink:", error)
+                    }
+                }
+            }
+        }
 }
 
 struct CompatibilityResult {

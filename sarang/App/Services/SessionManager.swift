@@ -1,5 +1,6 @@
 import Foundation
 import FirebaseAuth
+import FirebaseFirestore
 
 enum AuthState {
     case loading
@@ -44,21 +45,20 @@ final class SessionManager: ObservableObject {
     }
     
     func refreshUser() {
-            guard let userId = Auth.auth().currentUser?.uid else { return }
+        guard let userId = Auth.auth().currentUser?.uid else { return }
 
-            userService.getUser(userId: userId) { [weak self] result in
-                DispatchQueue.main.async {
-                    switch result {
-                    case .success(let updatedUser):
-                        // This pushes the new Vibe scores to the whole app
-                        self?.authState = .authenticated(updatedUser)
-                        print("✅ SessionManager: Personality scores refreshed!")
-                    case .failure(let error):
-                        print("❌ SessionManager: Failed to refresh user data:", error)
-                    }
+        userService.getUser(userId: userId) { [weak self] result in
+            DispatchQueue.main.async {
+                switch result {
+                case .success(let updatedUser):
+                    self?.authState = .authenticated(updatedUser)
+                    print("✅ SessionManager: Personality scores refreshed!")
+                case .failure(let error):
+                    print("❌ SessionManager: Failed to refresh user data:", error)
                 }
             }
         }
+    }
 
     func signOut() {
         do {
@@ -70,15 +70,22 @@ final class SessionManager: ObservableObject {
     }
     
     func deleteAccount(completion: @escaping (Bool, String?) -> Void) {
-            guard let user = Auth.auth().currentUser else {
-                completion(false, "No active user found.")
+        guard let user = Auth.auth().currentUser else {
+            completion(false, "No active user found.")
+            return
+        }
+        
+        let userId = user.uid
+        
+        // 1. Delete Firestore Data First
+        userService.deleteUserAccountData(userId: userId) { [weak self] error in
+            if let error = error {
+                completion(false, "Failed to delete database record: \(error.localizedDescription)")
                 return
             }
             
-            // Note: For a fully prod-ready app, you should also delete the user's Firestore document here
-            // using your UserService before deleting the Auth record.
-            
-            user.delete { [weak self] error in
+            // 2. Delete Auth Record Second
+            user.delete { error in
                 if let error = error {
                     completion(false, error.localizedDescription)
                 } else {
@@ -89,8 +96,7 @@ final class SessionManager: ObservableObject {
                 }
             }
         }
-
-    // MARK: Helpers (IMPORTANT for swipe system later)
+    }
 
     var currentUser: AppUser? {
         if case .authenticated(let user) = authState {

@@ -150,39 +150,54 @@ class UserService {
     }
     
     func sendPartnerRequest(fromUser: AppUser, toEmail: String, completion: @escaping (Result<Void, UserServiceError>) -> Void) {
-        let email = toEmail.lowercased()
-        let currentUserId = fromUser.id ?? ""
-        
-        // 1. Verify the partner user exists
-        db.collection("users").whereField("email", isEqualTo: email).getDocuments { snapshot, error in
-            if let error = error {
-                completion(.failure(.firestore(error.localizedDescription)))
-                return
-            }
+            let email = toEmail.lowercased()
+            let currentUserId = fromUser.id ?? ""
             
-            guard snapshot?.documents.first != nil else {
-                completion(.failure(.unknown("No user found with that email.")))
-                return
-            }
-            
-            // 2. Create the request
-            let request = PartnerRequest(
-                id: currentUserId,
-                fromId: currentUserId,
-                fromEmail: fromUser.email,
-                toEmail: email,
-                status: .pending,
-                timestamp: Date()
-            )
-            
-            do {
-                try self.db.collection("partnerRequests").document(currentUserId).setData(from: request)
-                completion(.success(()))
-            } catch {
-                completion(.failure(.encoding("Failed to create request.")))
+            // 1. Verify the partner user exists
+            db.collection("users").whereField("email", isEqualTo: email).getDocuments { snapshot, error in
+                if let error = error {
+                    DispatchQueue.main.async {
+                        completion(.failure(.firestore(error.localizedDescription)))
+                    }
+                    return
+                }
+                
+                guard snapshot?.documents.first != nil else {
+                    DispatchQueue.main.async {
+                        completion(.failure(.unknown("No user found with that email.")))
+                    }
+                    return
+                }
+                
+                // 2. Create the request
+                let request = PartnerRequest(
+                    id: nil,
+                    fromId: currentUserId,
+                    fromEmail: fromUser.email,
+                    toEmail: email,
+                    status: .pending,
+                    timestamp: Date()
+                )
+                
+                // 3. Write data safely wrapped in a do-catch
+                do {
+                    try self.db.collection("partnerRequests").document(currentUserId).setData(from: request) { error in
+                        DispatchQueue.main.async {
+                            if let error = error {
+                                completion(.failure(.firestore("Failed to send: \(error.localizedDescription)")))
+                            } else {
+                                completion(.success(()))
+                            }
+                        }
+                    }
+                } catch {
+                    // If the 'try' above fails, it gets caught here immediately!
+                    DispatchQueue.main.async {
+                        completion(.failure(.encoding("Failed to encode request data.")))
+                    }
+                }
             }
         }
-    }
 
     /// Fetches any pending request sent by the current user
     func fetchSentRequest(for userId: String, completion: @escaping (PartnerRequest?) -> Void) {
@@ -239,6 +254,13 @@ class UserService {
             } else {
                 completion(.success(()))
             }
+        }
+    }
+    
+    func deleteUserAccountData(userId: String, completion: @escaping (Error?) -> Void) {
+        let db = Firestore.firestore()
+        db.collection("users").document(userId).delete { error in
+            completion(error)
         }
     }
 }
