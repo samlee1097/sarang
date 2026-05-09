@@ -20,21 +20,20 @@ struct TraitSelectionRow: View {
             
             // 2. The Centered & Wrapped Labels
             GeometryReader { geo in
-                let circleWidth: CGFloat = 40 // Base width for math
+                let circleWidth: CGFloat = 40
                 let totalCirclesWidth = (CGFloat(options.count) * circleWidth) + (CGFloat(options.count - 1) * sharedSpacing)
                 
-                // We define a fixed width for the label box so it can wrap to 2 lines
-                let labelBoxWidth: CGFloat = 100
+                let labelBoxWidth: CGFloat = 110
                 
                 HStack(alignment: .top, spacing: 0) {
                     Text(leftLabel)
                         .font(.system(size: 11, weight: .medium))
                         .foregroundColor(.purple.opacity(0.8))
                         .multilineTextAlignment(.center)
-                        .lineLimit(2) // Allow 2 lines
-                        .fixedSize(horizontal: false, vertical: true) // Force vertical growth
+                        .lineLimit(3)
+                        .minimumScaleFactor(0.7)
+                        .fixedSize(horizontal: false, vertical: true)
                         .frame(width: labelBoxWidth)
-                        // Nudge to align label center with circle center
                         .offset(x: -(labelBoxWidth / 2) + (circleWidth / 2))
                     
                     Spacer()
@@ -43,16 +42,16 @@ struct TraitSelectionRow: View {
                         .font(.system(size: 11, weight: .medium))
                         .foregroundColor(.blue.opacity(0.8))
                         .multilineTextAlignment(.center)
-                        .lineLimit(2)
+                        .lineLimit(3)
+                        .minimumScaleFactor(0.7)
                         .fixedSize(horizontal: false, vertical: true)
                         .frame(width: labelBoxWidth)
-                        // Nudge to align label center with circle center
                         .offset(x: (labelBoxWidth / 2) - (circleWidth / 2))
                 }
                 .frame(width: totalCirclesWidth)
                 .frame(maxWidth: .infinity, alignment: .center)
             }
-            .frame(height: 35) // Increased height to accommodate 2 lines of text
+            .frame(height: 50)
         }
     }
 
