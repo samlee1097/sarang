@@ -16,6 +16,7 @@ struct SarangApp: App {
             RootView()
                 .environmentObject(sessionManager)
                 .environmentObject(appState)
+                .preferredColorScheme(.light)
         }
     }
 }

@@ -18,14 +18,14 @@ struct ProfileView: View {
                         VStack(spacing: 32) {
                             ProfileHeaderView(user: user)
                                 .padding(.top, 20)
-                            
+
                             PartnerSectionView(
                                 user: user,
                                 viewModel: viewModel,
                                 isShowingConnectPartner: $isShowingConnectPartner,
                                 showingUnlinkAlert: $showingUnlinkAlert
                             )
-                            
+
                             DiscoverySectionView(user: user)
                             
                             StatsSectionView(viewModel: viewModel)

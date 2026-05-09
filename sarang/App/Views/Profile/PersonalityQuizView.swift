@@ -2,6 +2,8 @@ import SwiftUI
 import FirebaseFirestore
 
 struct PersonalityQuizView: View {
+    var isRetake: Bool = false
+    
     @StateObject private var viewModel = PersonalityViewModel()
     @EnvironmentObject var sessionManager: SessionManager
     @Environment(\.dismiss) var dismiss
@@ -35,11 +37,16 @@ struct PersonalityQuizView: View {
             }
         }
         .onAppear {
-            loadSavedAnswers()
+            if isRetake {
+                loadSavedAnswers()
+            } else {
+                currentAnswers = Array(repeating: nil, count: 8)
+                UserDefaults.standard.removeObject(forKey: "savedQuizAnswers")
+            }
         }
     }
     
-    // MARK: - Sub-Views (Breaking up the expression)
+    // MARK: - Sub-Views
     
     private var headerSection: some View {
         VStack(spacing: 8) {

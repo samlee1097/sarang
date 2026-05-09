@@ -18,6 +18,36 @@ struct DiscoverySectionView: View {
                 .frame(maxWidth: .infinity)
                 .background(PremiumCardBase(trait: trait))
                 .padding(.horizontal, 30)
+            } else {
+                // 🛠️ FALLBACK: Shows when the user hasn't taken the quiz yet
+                VStack(spacing: 16) {
+                    Image(systemName: "sparkles")
+                        .font(.system(size: 30))
+                        .foregroundColor(.secondary.opacity(0.4))
+                    
+                    Text("Discover your date archetype to see compatibility.")
+                        .font(.system(size: 14))
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 40)
+                    
+                    NavigationLink(destination: PersonalityQuizView()) {
+                        Text("Take the Vibe Quiz")
+                            .font(.system(size: 14, weight: .bold))
+                            .foregroundColor(.white)
+                            .padding(.vertical, 12)
+                            .padding(.horizontal, 24)
+                            .background(Capsule().fill(Color.accentColor))
+                    }
+                }
+                .padding(.vertical, 40)
+                .frame(maxWidth: .infinity)
+                .background(
+                    RoundedRectangle(cornerRadius: 32)
+                        .fill(Color(.secondarySystemGroupedBackground))
+                        .shadow(color: Color.black.opacity(0.04), radius: 20, y: 10)
+                )
+                .padding(.horizontal, 30)
             }
         }
     }
