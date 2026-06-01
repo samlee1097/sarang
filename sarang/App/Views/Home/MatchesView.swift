@@ -14,35 +14,59 @@ struct MatchesView: View {
             ZStack {
                 Color(.systemGroupedBackground).ignoresSafeArea()
                 
-                if viewModel.isLoading {
-                    ProgressView()
-                        .scaleEffect(1.2)
-                } else if viewModel.matchedIdeas.isEmpty {
-                    emptyState
+                // 🛠️ Check if the user actually has a partner linked first
+                if user.partnerId == nil || user.partnerId?.isEmpty == true {
+                    unlinkedState
                 } else {
-                    ScrollView {
-                        LazyVGrid(columns: columns, spacing: 20) {
-                            ForEach(viewModel.matchedIdeas) { idea in
-                                NavigationLink(destination: MatchDetailView(idea: idea)) {
-                                    MatchThumbnailCard(idea: idea)
+                    // Proceed to normal matches logic
+                    if viewModel.isLoading {
+                        ProgressView()
+                            .scaleEffect(1.2)
+                    } else if viewModel.matchedIdeas.isEmpty {
+                        emptyState
+                    } else {
+                        ScrollView {
+                            LazyVGrid(columns: columns, spacing: 20) {
+                                ForEach(viewModel.matchedIdeas) { idea in
+                                    NavigationLink(destination: MatchDetailView(idea: idea)) {
+                                        MatchThumbnailCard(idea: idea)
+                                    }
+                                    .buttonStyle(PlainButtonStyle())
                                 }
-                                .buttonStyle(PlainButtonStyle())
                             }
+                            .padding(20)
                         }
-                        .padding(20)
                     }
                 }
             }
             .navigationTitle("Your Dates")
             .onAppear {
-                if let userId = user.id {
+                if let userId = user.id, user.partnerId != nil {
                     viewModel.fetchMatches(userId: userId)
                 }
             }
         }
     }
     
-    // MARK: - Empty State
+    // MARK: - Unlinked State (No Partner Yet)
+    private var unlinkedState: some View {
+        VStack(spacing: 20) {
+            Image(systemName: "person.2.slash")
+                .font(.system(size: 60))
+                .foregroundColor(.gray.opacity(0.4))
+            
+            Text("Connection Required")
+                .font(.title3.bold())
+            
+            Text("Connect with a partner on your Profile tab to start seeing your shared matches here.")
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 40)
+        }
+    }
+    
+    // MARK: - Empty State (Has Partner, No Matches)
     private var emptyState: some View {
         VStack(spacing: 20) {
             Image(systemName: "heart.text.square.fill")

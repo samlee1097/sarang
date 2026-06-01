@@ -2,10 +2,24 @@ import Foundation
 import FirebaseAuth
 import FirebaseFirestore
 
-enum AuthState {
+enum AuthState: Equatable {
     case loading
     case authenticated(AppUser)
     case unauthenticated
+
+    static func == (lhs: AuthState, rhs: AuthState) -> Bool {
+        switch (lhs, rhs) {
+        case (.loading, .loading):
+            return true
+        case (.unauthenticated, .unauthenticated):
+            return true
+        case let (.authenticated(lUser), .authenticated(rUser)):
+            // Compare by a stable identifier to avoid requiring AppUser to conform to Equatable
+            return lUser.id == rUser.id
+        default:
+            return false
+        }
+    }
 }
 
 final class SessionManager: ObservableObject {
@@ -115,3 +129,4 @@ final class SessionManager: ObservableObject {
         }
     }
 }
+

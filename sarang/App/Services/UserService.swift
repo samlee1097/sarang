@@ -150,26 +150,61 @@ class UserService {
     }
     
     func sendPartnerRequest(fromUser: AppUser, toEmail: String, completion: @escaping (Result<Void, UserServiceError>) -> Void) {
-            let email = toEmail.lowercased()
-            let currentUserId = fromUser.id ?? ""
+        let email = toEmail.lowercased()
+        let currentUserId = fromUser.id ?? ""
+        
+        // 1. Find the partner by email
+        db.collection("users").whereField("email", isEqualTo: email).getDocuments { [weak self] snapshot, error in
+            guard let self = self else { return }
             
-            // 1. Verify the partner user exists
-            db.collection("users").whereField("email", isEqualTo: email).getDocuments { snapshot, error in
-                if let error = error {
-                    DispatchQueue.main.async {
-                        completion(.failure(.firestore(error.localizedDescription)))
+            if let error = error {
+                DispatchQueue.main.async { completion(.failure(.firestore(error.localizedDescription))) }
+                return
+            }
+            
+            guard let document = snapshot?.documents.first else {
+                DispatchQueue.main.async { completion(.failure(.unknown("No user found with that email."))) }
+                return
+            }
+            
+            let partnerId = document.documentID
+            let partnerUser = try? document.data(as: AppUser.self)
+            
+            // BOUNCER RULE 1: Are they already linked?
+            if partnerUser?.partnerId != nil && partnerUser?.partnerId?.isEmpty == false {
+                DispatchQueue.main.async { completion(.failure(.unknown("This user is already linked to someone else."))) }
+                return
+            }
+            
+            // 2. Check for active requests involving this partner
+            self.db.collection("partnerRequests").document(partnerId).getDocument { reqSnapshot, _ in
+                let partnersOutgoingRequest = try? reqSnapshot?.data(as: PartnerRequest.self)
+                
+                // BOUNCER RULE 2: Did they already send US a request? (Crossed Wires)
+                if let existingReq = partnersOutgoingRequest,
+                   existingReq.toEmail == fromUser.email,
+                   existingReq.status == .pending {
+                    // MUTUAL MATCH! Auto-accept the connection instead of sending a new request
+                    self.acceptPartnerRequest(requestId: partnerId, currentUserId: currentUserId, partnerId: partnerId) { result in
+                        DispatchQueue.main.async {
+                            switch result {
+                            case .success:
+                                completion(.success(())) // The UI will update to the Score Reveal!
+                            case .failure(let err):
+                                completion(.failure(err))
+                            }
+                        }
                     }
                     return
                 }
                 
-                guard snapshot?.documents.first != nil else {
-                    DispatchQueue.main.async {
-                        completion(.failure(.unknown("No user found with that email.")))
-                    }
+                // BOUNCER RULE 3: Are they waiting on someone ELSE?
+                if partnersOutgoingRequest != nil {
+                    DispatchQueue.main.async { completion(.failure(.unknown("This user currently has a pending request with someone else."))) }
                     return
                 }
                 
-                // 2. Create the request
+                // If they passed all the checks, finally create and send the request!
                 let request = PartnerRequest(
                     id: nil,
                     fromId: currentUserId,
@@ -179,7 +214,6 @@ class UserService {
                     timestamp: Date()
                 )
                 
-                // 3. Write data safely wrapped in a do-catch
                 do {
                     try self.db.collection("partnerRequests").document(currentUserId).setData(from: request) { error in
                         DispatchQueue.main.async {
@@ -191,13 +225,11 @@ class UserService {
                         }
                     }
                 } catch {
-                    // If the 'try' above fails, it gets caught here immediately!
-                    DispatchQueue.main.async {
-                        completion(.failure(.encoding("Failed to encode request data.")))
-                    }
+                    DispatchQueue.main.async { completion(.failure(.encoding("Failed to encode request data."))) }
                 }
             }
         }
+    }
 
     /// Fetches any pending request sent by the current user
     func fetchSentRequest(for userId: String, completion: @escaping (PartnerRequest?) -> Void) {
@@ -240,19 +272,30 @@ class UserService {
     }
     
     func unlinkPartner(currentUserId: String, partnerId: String, completion: @escaping (Result<Void, UserServiceError>) -> Void) {
+        // A Firestore Batch ensures all these actions happen at the exact same time
         let batch = db.batch()
+        
         let currentUserRef = db.collection("users").document(currentUserId)
         let partnerUserRef = db.collection("users").document(partnerId)
+        let currentRequestRef = db.collection("partnerRequests").document(currentUserId)
+        let partnerRequestRef = db.collection("partnerRequests").document(partnerId)
         
-        // Set partnerId to nil for both
+        // 1. Erase the connection for BOTH users
         batch.updateData(["partnerId": FieldValue.delete()], forDocument: currentUserRef)
         batch.updateData(["partnerId": FieldValue.delete()], forDocument: partnerUserRef)
         
+        // 2. Delete any old request documents so they don't trigger the auto-link later
+        batch.deleteDocument(currentRequestRef)
+        batch.deleteDocument(partnerRequestRef)
+        
+        // 3. Commit the sweep
         batch.commit { error in
-            if let error = error {
-                completion(.failure(.firestore(error.localizedDescription)))
-            } else {
-                completion(.success(()))
+            DispatchQueue.main.async {
+                if let error = error {
+                    completion(.failure(.firestore(error.localizedDescription)))
+                } else {
+                    completion(.success(()))
+                }
             }
         }
     }
@@ -261,6 +304,27 @@ class UserService {
         let db = Firestore.firestore()
         db.collection("users").document(userId).delete { error in
             completion(error)
+        }
+    }
+    
+    /// Fetches any incoming request sent TO the current user's email
+    func fetchIncomingRequest(for email: String, completion: @escaping (PartnerRequest?) -> Void) {
+        db.collection("partnerRequests")
+            .whereField("toEmail", isEqualTo: email.lowercased())
+            .getDocuments { snapshot, _ in
+                let request = try? snapshot?.documents.first?.data(as: PartnerRequest.self)
+                completion(request)
+            }
+    }
+
+    /// Declines (deletes) an incoming request
+    func declinePartnerRequest(requestId: String, completion: @escaping (Result<Void, UserServiceError>) -> Void) {
+        db.collection("partnerRequests").document(requestId).delete { error in
+            if let error = error {
+                completion(.failure(.firestore(error.localizedDescription)))
+            } else {
+                completion(.success(()))
+            }
         }
     }
 }

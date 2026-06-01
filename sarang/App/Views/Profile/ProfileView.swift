@@ -7,7 +7,7 @@ struct ProfileView: View {
     
     @State private var isShowingConnectPartner = false
     @State private var showingUnlinkAlert = false
-
+    
     var body: some View {
         if case .authenticated(let user) = sessionManager.authState {
             NavigationView {
@@ -18,14 +18,14 @@ struct ProfileView: View {
                         VStack(spacing: 32) {
                             ProfileHeaderView(user: user)
                                 .padding(.top, 20)
-
+                            
                             PartnerSectionView(
                                 user: user,
                                 viewModel: viewModel,
                                 isShowingConnectPartner: $isShowingConnectPartner,
                                 showingUnlinkAlert: $showingUnlinkAlert
                             )
-
+                            
                             DiscoverySectionView(user: user)
                             
                             StatsSectionView(viewModel: viewModel)
@@ -39,7 +39,12 @@ struct ProfileView: View {
                 }
                 .navigationTitle("Profile")
                 .navigationBarTitleDisplayMode(.inline)
-                .sheet(isPresented: $isShowingConnectPartner) {
+                .sheet(isPresented: $isShowingConnectPartner, onDismiss: {
+                    // Put your refresh logic here
+                    if let user = sessionManager.currentUser, let userId = user.id {
+                        viewModel.checkConnectionRequests(userId: userId, userEmail: user.email)
+                    }
+                }){
                     ConnectPartnerView()
                 }
                 .alert("Unlink Partner?", isPresented: $showingUnlinkAlert) {
@@ -54,18 +59,26 @@ struct ProfileView: View {
                 }
             }
             .onAppear {
-                if let userId = sessionManager.currentUserId {
-                    appState.loadUserData(userId: userId)
-                    viewModel.fetchStats(userId: userId)
-                    viewModel.checkPendingRequest(userId: userId)
-                    
-                    if let pId = user.partnerId {
-                        viewModel.fetchPartnerData(partnerId: pId)
-                    }
+                loadInitialData()
+            }
+            .onChange(of: sessionManager.currentUser) { oldValue, newValue in
+                if let user = newValue, let userId = user.id {
+                    viewModel.refreshData(userId: userId, userEmail: user.email)
                 }
             }
+        }
+    }
+    
+    private func loadInitialData() {
+        guard let user = sessionManager.currentUser, let userId = user.id else { return }
+        appState.loadUserData(userId: userId)
+        viewModel.fetchStats(userId: userId)
+        viewModel.refreshData(userId: userId, userEmail: user.email)
+        
+        if let pId = user.partnerId {
+            viewModel.fetchPartnerData(partnerId: pId)
         } else {
-            ProgressView("Loading Profile...")
+            viewModel.partnerData = nil
         }
     }
 }

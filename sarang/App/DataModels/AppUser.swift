@@ -1,7 +1,7 @@
 import Foundation
 import FirebaseFirestore
 
-struct AppUser: Codable, Identifiable {
+struct AppUser: Codable, Identifiable, Equatable {
     @DocumentID var id: String?
     var username: String
     var display_name: String
