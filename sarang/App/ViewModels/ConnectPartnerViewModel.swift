@@ -26,7 +26,7 @@ class ConnectPartnerViewModel: ObservableObject {
     
     var subtitleText: String {
         if let user = incomingUser {
-            let name = user.username ?? user.email.components(separatedBy: "@").first?.capitalized ?? "Someone"
+            let name = user.username
             return "\(name) wants to sync profiles and unlock shared date ideas with you!"
         }
         if incomingRequest != nil { return "Someone special is waiting to connect their profile with yours!" }

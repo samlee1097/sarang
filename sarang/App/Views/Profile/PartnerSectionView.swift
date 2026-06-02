@@ -25,7 +25,6 @@ struct PartnerSectionView: View {
                                 .font(.system(size: 15, weight: .bold))
                                 .foregroundColor(.primary)
                             
-                            // 🛠️ FIX: Shortened text, forced to 1 line, allowed to shrink slightly
                             Text("Tap to review request")
                                 .font(.system(size: 13))
                                 .foregroundColor(.secondary)
@@ -37,7 +36,8 @@ struct PartnerSectionView: View {
                         Image(systemName: "chevron.right").font(.system(size: 14, weight: .semibold)).foregroundColor(.secondary.opacity(0.4))
                     }
                     .padding()
-                    .background(Color(.systemBackground))
+                    // 🚀 REFACTORED: Using your new Design System Card Background
+                    .background(DesignSystem.Colors.card)
                     .cornerRadius(20)
                     .overlay(RoundedRectangle(cornerRadius: 20).stroke(Color.green.opacity(0.3), lineWidth: 1))
                     .shadow(color: .green.opacity(0.1), radius: 10, y: 4)
@@ -56,7 +56,6 @@ struct PartnerSectionView: View {
                                 .font(.system(size: 15, weight: .bold))
                                 .foregroundColor(.primary)
                             
-                            // 🛠️ FIX: Applied the same safeguards here just in case!
                             Text("Tap to manage request")
                                 .font(.system(size: 13))
                                 .foregroundColor(.secondary)
@@ -67,7 +66,8 @@ struct PartnerSectionView: View {
                         Image(systemName: "chevron.right").font(.system(size: 14, weight: .semibold)).foregroundColor(.secondary.opacity(0.4))
                     }
                     .padding()
-                    .background(Color(.systemBackground))
+                    // 🚀 REFACTORED: Using your new Design System Card Background
+                    .background(DesignSystem.Colors.card)
                     .cornerRadius(20)
                     .shadow(color: .black.opacity(0.04), radius: 10, y: 4)
                 }
@@ -77,11 +77,12 @@ struct PartnerSectionView: View {
                 Button(action: { isShowingConnectPartner = true }) {
                     Text("Connect with Partner")
                         .font(.headline.bold())
-                        .foregroundColor(.white)
+                        .foregroundColor(.white) // Keep this white so it pops on the gradient!
                         .padding()
                         .frame(maxWidth: .infinity)
                         .frame(height: 56)
-                        .background(Color.pink)
+                    // 🚀 REFACTORED: Using your new Design System Brand Gradient
+                        .background(DesignSystem.Colors.brandGradient)
                         .cornerRadius(15)
                 }
             }
